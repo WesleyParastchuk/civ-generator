@@ -123,6 +123,10 @@ export function GamePage({ code }: { code: string }) {
     sendMsg({ type: "cast_vote", payload: { scope, field, value, weight } });
   };
 
+  const handleRemoveVote = (scope: VoteScope, field: string, value: string | number | boolean) => {
+    sendMsg({ type: "remove_vote", payload: { scope, field, value } });
+  };
+
   const handleEndTurn = () => sendMsg({ type: "end_turn" });
   const handleConfirmNextTurn = () => sendMsg({ type: "confirm_next_turn" });
 
@@ -189,92 +193,98 @@ export function GamePage({ code }: { code: string }) {
         />
       )}
 
-      <div className="imperial-border mx-auto w-full max-w-3xl rounded-3xl border border-[rgb(212_171_86_/_0.4)] bg-[rgb(11_26_46_/_0.84)] p-5 shadow-[0_24px_60px_rgb(2_7_15_/_0.58)] backdrop-blur sm:p-8">
-        <h1 className="font-[var(--font-cinzel)] text-2xl font-bold tracking-wide text-[rgb(214_178_97_/_0.95)]">
-          Votação
-        </h1>
+      <div className="imperial-border mx-auto flex w-full max-w-3xl flex-col rounded-3xl border border-[rgb(212_171_86_/_0.4)] bg-[rgb(11_26_46_/_0.84)] shadow-[0_24px_60px_rgb(2_7_15_/_0.58)] backdrop-blur" style={{ maxHeight: "calc(100dvh - 3.5rem)" }}>
+        {/* Sticky header */}
+        <div className="shrink-0 px-5 pt-5 sm:px-8 sm:pt-8">
+          <h1 className="font-[var(--font-cinzel)] text-2xl font-bold tracking-wide text-[rgb(214_178_97_/_0.95)]">
+            Votação
+          </h1>
 
-        <div className="mt-4">
-          <TurnHeader
-            currentTurn={currentTurn}
-            totalTurns={totalTurns}
-            pointsPerTurn={pointsPerTurn}
-            pointsSpent={mySpent}
-            deadline={votingState?.turnDeadline ?? 0}
-          />
+          <div className="mt-4">
+            <TurnHeader
+              currentTurn={currentTurn}
+              totalTurns={totalTurns}
+              pointsPerTurn={pointsPerTurn}
+              pointsSpent={mySpent}
+              deadline={votingState?.turnDeadline ?? 0}
+            />
+          </div>
+
+          {/* Tabs */}
+          <div className="mt-4 flex flex-wrap gap-1.5">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={[
+                  "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors",
+                  activeTab === tab.id
+                    ? "border-[rgb(214_178_97_/_0.6)] bg-[rgb(23_47_76_/_0.9)] text-[rgb(239_223_187_/_0.95)]"
+                    : "border-[rgb(190_153_81_/_0.25)] bg-transparent text-[rgb(206_189_156_/_0.6)] hover:text-[rgb(206_189_156_/_0.9)]",
+                ].join(" ")}
+              >
+                {tab.id === "match"
+                  ? <Globe className="h-3 w-3 shrink-0" />
+                  : <User className="h-3 w-3 shrink-0" />}
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Tabs */}
-        <div className="mt-4 flex flex-wrap gap-1.5">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-              className={[
-                "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors",
-                activeTab === tab.id
-                  ? "border-[rgb(214_178_97_/_0.6)] bg-[rgb(23_47_76_/_0.9)] text-[rgb(239_223_187_/_0.95)]"
-                  : "border-[rgb(190_153_81_/_0.25)] bg-transparent text-[rgb(206_189_156_/_0.6)] hover:text-[rgb(206_189_156_/_0.9)]",
-              ].join(" ")}
-            >
-              {tab.id === "match"
-                ? <Globe className="h-3 w-3 shrink-0" />
-                : <User className="h-3 w-3 shrink-0" />}
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Fields */}
-        <div className="mt-4 space-y-4">
-          {configSchema && fields.map(([key, schema]) => (
-            <div key={key}>
-              <div className="mb-1.5 flex items-center gap-2">
-                <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[rgb(214_180_104_/_0.88)]">
-                  {schema.label}
-                </span>
-                {"description" in schema && schema.description && (
-                  <span className="text-xs text-[rgb(206_189_156_/_0.5)]">— {schema.description}</span>
-                )}
+        {/* Scrollable fields */}
+        <div className="flex-1 overflow-y-auto px-5 py-4 sm:px-8">
+          <div className="space-y-4">
+            {configSchema && fields.map(([key, schema]) => (
+              <div key={key}>
+                <div className="mb-1.5 flex items-center gap-2">
+                  <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[rgb(214_180_104_/_0.88)]">
+                    {schema.label}
+                  </span>
+                  {"description" in schema && schema.description && (
+                    <span className="text-xs text-[rgb(206_189_156_/_0.5)]">— {schema.description}</span>
+                  )}
+                </div>
+                <VotingField
+                  fieldKey={key}
+                  schema={schema}
+                  leaders={leaders}
+                  pointsRemaining={pointsRemaining}
+                  turnVoteTally={buildTurnTally(votingState?.currentTurnVotes ?? [], activeScope, key)}
+                  myTurnVoteTally={myId ? buildMyTurnTally(votingState?.currentTurnVotes ?? [], myId, activeScope, key) : {}}
+                  onVote={(value, weight) => handleVote(activeScope, key, value, weight)}
+                  onRemoveVote={(value) => handleRemoveVote(activeScope, key, value)}
+                />
               </div>
-              <VotingField
-                fieldKey={key}
-                schema={schema}
-                leaders={leaders}
-                pointsRemaining={pointsRemaining}
-                turnVoteTally={buildTurnTally(votingState?.currentTurnVotes ?? [], activeScope, key)}
-                myTurnVoteTally={myId ? buildMyTurnTally(votingState?.currentTurnVotes ?? [], myId, activeScope, key) : {}}
-                onVote={(value, weight) => handleVote(activeScope, key, value, weight)}
-              />
-            </div>
-          ))}
-          {!configSchema && (
-            <p className="text-sm text-[rgb(206_189_156_/_0.5)]">Carregando opções…</p>
-          )}
+            ))}
+            {!configSchema && (
+              <p className="text-sm text-[rgb(206_189_156_/_0.5)]">Carregando opções…</p>
+            )}
+          </div>
         </div>
 
-        {/* Footer */}
-        <div className="mt-4">
+        {/* Sticky footer */}
+        <div className="shrink-0 px-5 pb-5 sm:px-8 sm:pb-8">
           <TurnFooter
             pointsSpent={mySpent}
             pointsPerTurn={pointsPerTurn}
             votesThisTurn={myVotesThisTurn}
           />
-        </div>
 
-        {/* Host end-turn button */}
-        {session.isHost && votingState?.phase === "playing" && (
-          <div className="mt-6 flex justify-end">
-            <button
-              type="button"
-              onClick={handleEndTurn}
-              className="game-control-button h-auto rounded-xl px-5 py-2.5 text-sm font-semibold"
-            >
-              Finalizar turno {currentTurn}
-            </button>
-          </div>
-        )}
+          {/* Host end-turn button */}
+          {session.isHost && votingState?.phase === "playing" && (
+            <div className="mt-4 flex justify-end">
+              <button
+                type="button"
+                onClick={handleEndTurn}
+                className="game-control-button h-auto rounded-xl px-5 py-2.5 text-sm font-semibold"
+              >
+                Finalizar turno {currentTurn}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </>
   );

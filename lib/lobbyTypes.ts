@@ -18,6 +18,7 @@ export type ClientMessage =
   | { type: "toggle_ready" }
   | { type: "update_config"; payload: { config: RoomConfig } }
   | { type: "cast_vote"; payload: { scope: VoteScope; field: string; value: string | number | boolean; weight: number } }
+  | { type: "remove_vote"; payload: { scope: VoteScope; field: string; value: string | number | boolean } }
   | { type: "resolve_tie"; payload: { scope: VoteScope; field: string; value: string | number | boolean } }
   | { type: "end_turn" }
   | { type: "confirm_next_turn" }
