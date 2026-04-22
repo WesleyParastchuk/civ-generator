@@ -17,11 +17,11 @@ const INACTIVITY_MS = 30 * 60 * 1000;
 
 function scopeKey(scope: VoteScope): string {
   if (scope === "match") return "match";
-  return `player:${scope.playerId}`;
+  return `player|${scope.playerId}`;
 }
 
 function accumulatorKey(scope: VoteScope, field: string, value: string | number | boolean): string {
-  return `${scopeKey(scope)}:${field}:${String(value)}`;
+  return `${scopeKey(scope)}|${field}|${String(value)}`;
 }
 
 export default class LobbyServer implements Party.Server {
@@ -113,6 +113,7 @@ export default class LobbyServer implements Party.Server {
     sender: Party.Connection,
     payload: { scope: VoteScope; field: string; value: string | number | boolean; weight: number }
   ) {
+    if (!this.config) return;
     // Validate phase
     if (this.gamePhase !== "playing") return;
 
@@ -206,23 +207,16 @@ export default class LobbyServer implements Party.Server {
     const playerFields = new Map<string, Set<string>>(); // playerId → Set<field>
 
     for (const key of Object.keys(this.accumulator)) {
-      // key format: "match:field:value" or "player:playerId:field:value"
-      if (key.startsWith("match:")) {
-        const rest = key.slice("match:".length);
-        // rest = "field:value" — field may not contain ":"? We store as field:String(value)
-        // We need to extract field. Since field could have colons theoretically,
-        // we track the field names that were actually voted on.
-        // The safest approach: re-parse by splitting at most 2 parts after "match:"
-        const colonIdx = rest.indexOf(":");
-        if (colonIdx !== -1) {
-          matchFields.add(rest.slice(0, colonIdx));
+      // key format: "match|field|value" or "player|playerId|field|value"
+      if (key.startsWith("match|")) {
+        const rest = key.slice("match|".length);
+        const pipeIdx = rest.indexOf("|");
+        if (pipeIdx !== -1) {
+          matchFields.add(rest.slice(0, pipeIdx));
         }
-      } else if (key.startsWith("player:")) {
-        const rest = key.slice("player:".length);
-        // rest = "playerId:field:value"
-        // playerId could theoretically contain colons but connection IDs typically don't
-        // Split into at most 3 parts
-        const parts = rest.split(":");
+      } else if (key.startsWith("player|")) {
+        const rest = key.slice("player|".length);
+        const parts = rest.split("|");
         if (parts.length >= 3) {
           const playerId = parts[0];
           const field = parts[1];
@@ -283,7 +277,7 @@ export default class LobbyServer implements Party.Server {
     maxWeight: number;
   } {
     // Find all accumulator entries for this scope+field
-    const prefix = `${scopeKey(scope)}:${field}:`;
+    const prefix = `${scopeKey(scope)}|${field}|`;
     let maxWeight = 0;
     const candidateMap = new Map<string, number>(); // rawValue → weight
 
@@ -333,6 +327,9 @@ export default class LobbyServer implements Party.Server {
     );
     if (idx === -1) return;
 
+    const pending = this.pendingTieBreaks[idx];
+    if (!pending.tiedValues.some((v) => String(v) === String(value))) return;
+
     // Apply the resolved value to finalConfig
     if (!this.finalConfig) return;
 
@@ -353,11 +350,11 @@ export default class LobbyServer implements Party.Server {
   }
 
   broadcastVotingState() {
-    if (!this.config) return;
+    if (this.gamePhase === "lobby" || !this.config) return;
     const ledger = this.currentLedger;
 
     const state: VotingState = {
-      phase: this.gamePhase === "lobby" ? "playing" : (this.gamePhase as VotingState["phase"]),
+      phase: this.gamePhase as VotingState["phase"],
       currentTurn: this.currentTurn,
       totalTurns: this.config.turns,
       pointsPerTurn: this.config.pointsPerTurn,
