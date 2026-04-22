@@ -21,4 +21,5 @@ export type ClientMessage =
 export type ServerMessage =
   | { type: "welcome"; payload: { connectionId: string } }
   | { type: "room_update"; payload: { config: RoomConfig | null; players: ServerPlayer[] } }
-  | { type: "room_expired" };
+  | { type: "room_expired" }
+  | { type: "game_starting"; payload: { remainingMs: number } };
