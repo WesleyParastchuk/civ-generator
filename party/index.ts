@@ -10,7 +10,7 @@ export default class LobbyServer implements Party.Server {
 
   constructor(readonly room: Party.Room) {}
 
-  onConnect(_conn: Party.Connection) {
+  onConnect(_conn: Party.Connection) { // eslint-disable-line @typescript-eslint/no-unused-vars
     this.resetTimer();
   }
 

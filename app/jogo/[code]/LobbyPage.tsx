@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import usePartySocket from "partysocket/react";
 import type { ClientMessage, RoomConfig, ServerMessage, ServerPlayer } from "@/lib/lobbyTypes";
 import { getLobbySession, clearLobbySession } from "@/lib/sessionLobby";
@@ -68,12 +69,12 @@ function LobbyConnected({ code, playerInfo }: ConnectedProps) {
         <p className="text-sm text-[rgb(206_189_156_/_0.7)]">
           Esta sala foi encerrada por inatividade.
         </p>
-        <a
+        <Link
           href="/"
           className="mt-2 text-sm font-semibold text-[rgb(214_178_97_/_0.9)] underline underline-offset-4"
         >
           Criar nova sala
-        </a>
+        </Link>
       </div>
     );
   }
@@ -98,10 +99,10 @@ export function LobbyPage({ code }: { code: string }) {
   useEffect(() => {
     const session = getLobbySession(code);
     if (session) {
-      setPlayerInfo(session);
+      setPlayerInfo(session); // eslint-disable-line react-hooks/set-state-in-effect
       clearLobbySession(code);
     }
-  }, [code]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!playerInfo) {
     return (
