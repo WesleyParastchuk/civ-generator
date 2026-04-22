@@ -83,7 +83,6 @@ function LobbyConnected({ code, playerInfo }: ConnectedProps) {
 
   return (
     <LobbyPanel
-      code={code}
       config={config}
       players={players}
       myId={myId}
