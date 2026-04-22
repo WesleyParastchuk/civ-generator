@@ -36,6 +36,12 @@ yarn-error.log*
 # vercel
 .vercel
 
+# partykit local state
+.partykit/
+
+# claude code local settings
+.claude/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
