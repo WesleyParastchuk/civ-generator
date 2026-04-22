@@ -1,15 +1,251 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
+import usePartySocket from "partysocket/react";
+import type {
+  ClientMessage,
+  GameConfigSchema,
+  ServerMessage,
+  ServerPlayer,
+  TieBreakPending,
+  VoteCast,
+  VoteScope,
+  VotingState,
+} from "@/lib/lobbyTypes";
+import { TurnHeader } from "@/components/game/TurnHeader";
+import { TurnFooter } from "@/components/game/TurnFooter";
+import { BetweenTurnsOverlay } from "@/components/game/BetweenTurnsOverlay";
+import { VotingField, type LeaderEntry } from "@/components/game/VotingField";
+import { GameOverScreen } from "@/components/game/GameOverScreen";
+
+type GameSession = {
+  config: { turns: number; pointsPerTurn: number };
+  isHost: boolean;
+  nickname: string;
+};
+
+function readGameSession(code: string): GameSession | null {
+  if (typeof window === "undefined") return null;
+  const raw = sessionStorage.getItem(`game-${code}`);
+  if (!raw) return null;
+  return JSON.parse(raw) as GameSession;
+}
+
+type Tab = { id: string; label: string; scope: VoteScope };
+
+function buildTurnTally(
+  votes: VoteCast[],
+  scope: VoteScope,
+  field: string,
+): Record<string, number> {
+  const scopeId = scope === "match" ? "match" : scope.playerId;
+  const result: Record<string, number> = {};
+  for (const vote of votes) {
+    const vScopeId = vote.scope === "match" ? "match" : vote.scope.playerId;
+    if (vScopeId === scopeId && vote.field === field) {
+      result[String(vote.value)] = (result[String(vote.value)] ?? 0) + vote.weight;
+    }
+  }
+  return result;
+}
+
 export function GamePage({ code }: { code: string }) {
+  const session = readGameSession(code);
+
+  const [myId, setMyId] = useState<string | null>(null);
+  const [players, setPlayers] = useState<ServerPlayer[]>([]);
+  const [votingState, setVotingState] = useState<VotingState | null>(null);
+  const [configSchema, setConfigSchema] = useState<GameConfigSchema | null>(null);
+  const [leaders, setLeaders] = useState<LeaderEntry[]>([]);
+  const [activeTab, setActiveTab] = useState<string>("match");
+
+  const joinSentRef = useRef(false);
+
+  // Fetch config.json + leaders.json
+  useEffect(() => {
+    fetch("/data/config.json")
+      .then((r) => r.json())
+      .then((data) => setConfigSchema(data as GameConfigSchema))
+      .catch(() => {});
+    fetch("/data/leaders.json")
+      .then((r) => r.json())
+      .then((data) => setLeaders((data as { civilizations: LeaderEntry[] }).civilizations))
+      .catch(() => {});
+  }, []);
+
+  const socket = usePartySocket({
+    host: process.env.NEXT_PUBLIC_PARTYKIT_HOST!,
+    room: code,
+    onOpen() {
+      if (joinSentRef.current || !session) return;
+      joinSentRef.current = true;
+      const msg: ClientMessage = {
+        type: "join",
+        payload: { nickname: session.nickname, isHost: session.isHost },
+      };
+      socket.send(JSON.stringify(msg));
+    },
+    onMessage(evt) {
+      const msg = JSON.parse(evt.data as string) as ServerMessage;
+      if (msg.type === "welcome") {
+        setMyId(msg.payload.connectionId);
+      } else if (msg.type === "room_update") {
+        setPlayers(msg.payload.players);
+      } else if (msg.type === "voting_state") {
+        setVotingState(msg.payload);
+      }
+    },
+  });
+
+  const sendMsg = (msg: ClientMessage) => socket.send(JSON.stringify(msg));
+
+  const handleVote = (scope: VoteScope, field: string, value: string | number | boolean, weight: number) => {
+    sendMsg({ type: "cast_vote", payload: { scope, field, value, weight } });
+  };
+
+  const handleEndTurn = () => sendMsg({ type: "end_turn" });
+  const handleConfirmNextTurn = () => sendMsg({ type: "confirm_next_turn" });
+
+  const handleResolveTie = (pending: TieBreakPending, value: string | number | boolean) => {
+    sendMsg({ type: "resolve_tie", payload: { scope: pending.scope, field: pending.field, value } });
+  };
+
+  if (!session) {
+    return (
+      <div className="imperial-border mx-auto w-full max-w-3xl rounded-3xl border border-[rgb(212_171_86_/_0.4)] bg-[rgb(11_26_46_/_0.84)] p-10 text-center">
+        <p className="text-[rgb(206_189_156_/_0.7)]">Sessão expirada. Volte ao início.</p>
+      </div>
+    );
+  }
+
+  // Game over screen
+  if (votingState?.phase === "game_over") {
+    return (
+      <>
+        <GameOverScreen
+          votingState={votingState}
+          configSchema={configSchema}
+          leaders={leaders}
+          players={players}
+          isHost={session.isHost}
+          onResolveTie={handleResolveTie}
+        />
+      </>
+    );
+  }
+
+  // Compute tabs from connected players
+  const tabs: Tab[] = [
+    { id: "match", label: "Partida", scope: "match" },
+    ...players.map((p) => ({ id: p.id, label: p.nickname, scope: { playerId: p.id } as VoteScope })),
+  ];
+
+  const mySpent = votingState ? (votingState.spendByVoter[myId ?? ""] ?? 0) : 0;
+  const pointsPerTurn = votingState?.pointsPerTurn ?? session.config.pointsPerTurn;
+  const pointsRemaining = pointsPerTurn - mySpent;
+  const currentTurn = votingState?.currentTurn ?? 1;
+  const totalTurns = votingState?.totalTurns ?? session.config.turns;
+
+  const activeScope = tabs.find((t) => t.id === activeTab)?.scope ?? "match";
+  const fields = activeTab === "match"
+    ? Object.entries(configSchema?.matchConfig ?? {})
+    : Object.entries(configSchema?.playerConfig ?? {});
+
+  const myVotesThisTurn = votingState?.currentTurnVotes.filter((v) => v.voterId === myId).length ?? 0;
+
   return (
-    <div className="imperial-border mx-auto w-full max-w-3xl rounded-3xl border border-[rgb(212_171_86_/_0.4)] bg-[rgb(11_26_46_/_0.84)] p-6 text-center shadow-[0_24px_60px_rgb(2_7_15_/_0.58)] backdrop-blur sm:p-10">
-      <h1 className="font-[var(--font-cinzel)] text-3xl font-bold tracking-wide text-[rgb(214_178_97_/_0.95)]">
-        Votação
-      </h1>
-      <p className="mt-4 text-[rgb(206_189_156_/_0.7)]">
-        Sala:{" "}
-        <span className="font-mono font-semibold text-[rgb(227_200_140_/_0.92)]">{code}</span>
-      </p>
-    </div>
+    <>
+      {votingState?.phase === "between_turns" && (
+        <BetweenTurnsOverlay
+          nextTurn={currentTurn + 1}
+          totalTurns={totalTurns}
+          isHost={session.isHost}
+          onConfirm={handleConfirmNextTurn}
+        />
+      )}
+
+      <div className="imperial-border mx-auto w-full max-w-3xl rounded-3xl border border-[rgb(212_171_86_/_0.4)] bg-[rgb(11_26_46_/_0.84)] p-5 shadow-[0_24px_60px_rgb(2_7_15_/_0.58)] backdrop-blur sm:p-8">
+        <h1 className="font-[var(--font-cinzel)] text-2xl font-bold tracking-wide text-[rgb(214_178_97_/_0.95)]">
+          Votação
+        </h1>
+
+        <div className="mt-4">
+          <TurnHeader
+            currentTurn={currentTurn}
+            totalTurns={totalTurns}
+            pointsPerTurn={pointsPerTurn}
+            pointsSpent={mySpent}
+          />
+        </div>
+
+        {/* Tabs */}
+        <div className="mt-4 flex flex-wrap gap-1.5">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={[
+                "rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors",
+                activeTab === tab.id
+                  ? "border-[rgb(214_178_97_/_0.6)] bg-[rgb(23_47_76_/_0.9)] text-[rgb(239_223_187_/_0.95)]"
+                  : "border-[rgb(190_153_81_/_0.25)] bg-transparent text-[rgb(206_189_156_/_0.6)] hover:text-[rgb(206_189_156_/_0.9)]",
+              ].join(" ")}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Fields */}
+        <div className="mt-4 space-y-4">
+          {configSchema && fields.map(([key, schema]) => (
+            <div key={key}>
+              <div className="mb-1.5 flex items-center gap-2">
+                <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[rgb(214_180_104_/_0.88)]">
+                  {schema.label}
+                </span>
+                {"description" in schema && schema.description && (
+                  <span className="text-xs text-[rgb(206_189_156_/_0.5)]">— {schema.description}</span>
+                )}
+              </div>
+              <VotingField
+                fieldKey={key}
+                schema={schema}
+                leaders={leaders}
+                pointsRemaining={pointsRemaining}
+                turnVoteTally={buildTurnTally(votingState?.currentTurnVotes ?? [], activeScope, key)}
+                onVote={(value, weight) => handleVote(activeScope, key, value, weight)}
+              />
+            </div>
+          ))}
+          {!configSchema && (
+            <p className="text-sm text-[rgb(206_189_156_/_0.5)]">Carregando opções…</p>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="mt-4">
+          <TurnFooter
+            pointsSpent={mySpent}
+            pointsPerTurn={pointsPerTurn}
+            votesThisTurn={myVotesThisTurn}
+          />
+        </div>
+
+        {/* Host end-turn button */}
+        {session.isHost && votingState?.phase === "playing" && (
+          <div className="mt-6 flex justify-end">
+            <button
+              type="button"
+              onClick={handleEndTurn}
+              className="game-control-button h-auto rounded-xl px-5 py-2.5 text-sm font-semibold"
+            >
+              Finalizar turno {currentTurn}
+            </button>
+          </div>
+        )}
+      </div>
+    </>
   );
 }
