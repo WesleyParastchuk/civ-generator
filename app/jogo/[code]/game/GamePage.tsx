@@ -44,17 +44,21 @@ function buildTurnTally(
   return result;
 }
 
-function playerVotedField(
+function buildMyTurnTally(
   votes: VoteCast[],
   voterId: string,
   scope: VoteScope,
   field: string,
-): boolean {
+): Record<string, number> {
   const scopeId = scope === "match" ? "match" : scope.playerId;
-  return votes.some((v) => {
-    const vScopeId = v.scope === "match" ? "match" : v.scope.playerId;
-    return v.voterId === voterId && v.field === field && vScopeId === scopeId;
-  });
+  const result: Record<string, number> = {};
+  for (const vote of votes) {
+    const vScopeId = vote.scope === "match" ? "match" : vote.scope.playerId;
+    if (vote.voterId === voterId && vote.field === field && vScopeId === scopeId) {
+      result[String(vote.value)] = (result[String(vote.value)] ?? 0) + vote.weight;
+    }
+  }
+  return result;
 }
 
 export function GamePage({ code }: { code: string }) {
@@ -240,7 +244,7 @@ export function GamePage({ code }: { code: string }) {
                 leaders={leaders}
                 pointsRemaining={pointsRemaining}
                 turnVoteTally={buildTurnTally(votingState?.currentTurnVotes ?? [], activeScope, key)}
-                myVotedThisField={myId ? playerVotedField(votingState?.currentTurnVotes ?? [], myId, activeScope, key) : false}
+                myTurnVoteTally={myId ? buildMyTurnTally(votingState?.currentTurnVotes ?? [], myId, activeScope, key) : {}}
                 onVote={(value, weight) => handleVote(activeScope, key, value, weight)}
               />
             </div>
