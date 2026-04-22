@@ -36,7 +36,7 @@ export function VotingField(props: BaseProps) {
 
 type SelectProps = Omit<BaseProps, "schema"> & { schema: SelectFieldSchema };
 
-function SelectVoteField({ schema, leaders, pointsRemaining, turnVoteTally, myTurnVoteTally, onVote }: SelectProps) {
+function SelectVoteField({ schema, leaders, pointsRemaining, myTurnVoteTally, onVote }: SelectProps) {
   const options = buildSelectOptions(schema, leaders);
   const [selectedValue, setSelectedValue] = useState<string>(
     String(options[0]?.value ?? ""),
@@ -46,10 +46,6 @@ function SelectVoteField({ schema, leaders, pointsRemaining, turnVoteTally, myTu
   const weight = selectedOpt?.weight ?? 1;
   const canVote = pointsRemaining >= weight;
   const mySpentOnSelected = myTurnVoteTally[selectedValue] ?? 0;
-
-  const tallyEntries = Object.entries(turnVoteTally)
-    .filter(([, pts]) => pts > 0)
-    .sort(([, a], [, b]) => b - a);
 
   return (
     <div className="rounded-lg border border-[rgb(190_153_81_/_0.2)] bg-[rgb(10_20_34_/_0.6)] px-3 py-3 space-y-2">
@@ -69,35 +65,26 @@ function SelectVoteField({ schema, leaders, pointsRemaining, turnVoteTally, myTu
         ))}
       </select>
 
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center justify-between gap-2">
         {mySpentOnSelected > 0 ? (
           <span className="text-xs text-[rgb(214_178_97_/_0.8)]">
-            Você gastou <span className="font-bold">{mySpentOnSelected} pts</span> aqui este turno
+            Seus votos: <span className="font-bold">{mySpentOnSelected} pts</span>
           </span>
         ) : (
-          <span className="text-xs text-[rgb(206_189_156_/_0.4)]">Sem votos seus aqui ainda</span>
+          <span className="text-xs text-[rgb(206_189_156_/_0.35)]">Nenhum voto seu aqui</span>
         )}
 
         <button
           type="button"
           disabled={!canVote}
           onClick={() => { if (selectedOpt) onVote(selectedOpt.value, weight); }}
-          className="game-control-button inline-flex shrink-0 items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-40"
+          className="game-control-button inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-40"
           aria-label={`Votar em ${selectedOpt?.label ?? ""}`}
         >
-          <ThumbsUp className="h-4 w-4" />
+          <ThumbsUp className="h-4 w-4 shrink-0" />
           Votar · {weight} pt{weight !== 1 ? "s" : ""}
         </button>
       </div>
-
-      {tallyEntries.length > 0 && (
-        <p className="text-xs text-[rgb(206_189_156_/_0.45)] leading-relaxed">
-          {tallyEntries.map(([val, pts]) => {
-            const lbl = options.find((o) => String(o.value) === val)?.label ?? val;
-            return `${lbl}: ${pts}pts`;
-          }).join(" · ")}
-        </p>
-      )}
     </div>
   );
 }
