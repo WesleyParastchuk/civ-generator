@@ -1,0 +1,46 @@
+{
+  "metadata": {
+    "title": "Civilization VI Leaders",
+    "description": "Lista de civilizações e seus líderes em Civilization VI",
+    "count": 22,
+    "lastUpdated": "2026-04-22"
+  },
+  "civilizations": [
+    {
+      "id": 1,
+      "civilization": "O jogador escolhe",
+      "civIcon": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3Cstyle%3E.person%7Bfill:%23d4af37;stroke:%231a472a;stroke-width:2%7D%3C/style%3E%3C/defs%3E%3Ccircle cx='50' cy='30' r='15' class='person'/%3E%3Cpath d='M 50 50 Q 40 50 40 65 L 60 65 Q 60 50 50 50 Z' class='person'/%3E%3C/svg%3E",
+      "leader": "O jogador escolhe",
+      "leaderPortrait": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3Cstyle%3E.person%7Bfill:%23d4af37;stroke:%231a472a;stroke-width:2%7D%3C/style%3E%3C/defs%3E%3Ccircle cx='50' cy='30' r='15' class='person'/%3E%3Cpath d='M 50 50 Q 40 50 40 65 L 60 65 Q 60 50 50 50 Z' class='person'/%3E%3C/svg%3E",
+      "wikiLink": ""
+    },
+    {
+      "id": 2,
+      "civilization": "Aleatório",
+      "civIcon": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%23d4af37' stroke='%231a472a' stroke-width='2'/%3E%3Ctext x='50' y='65' font-size='60' font-weight='bold' text-anchor='middle' fill='%231a472a'%3E?%3C/text%3E%3C/svg%3E",
+      "leader": "Aleatório",
+      "leaderPortrait": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%23d4af37' stroke='%231a472a' stroke-width='2'/%3E%3Ctext x='50' y='65' font-size='60' font-weight='bold' text-anchor='middle' fill='%231a472a'%3E?%3C/text%3E%3C/svg%3E",
+      "wikiLink": ""
+    },
+    {"id": 3, "civilization": "França", "civIcon": "https://civilization.fandom.com/wiki/Special:FilePath/France_(Civ6).png", "leader": "Catarina de Médici", "leaderPortrait": "https://civilization.fandom.com/wiki/Special:FilePath/Catherine_de_Medici_(Civ6).png", "wikiLink": "https://civilization.fandom.com/wiki/Catherine_de_Medici_(Civ6)"},
+    {"id": 4, "civilization": "Brasil", "civIcon": "https://civilization.fandom.com/wiki/Special:FilePath/Brazil_(Civ6).png", "leader": "Dom Pedro II", "leaderPortrait": "https://civilization.fandom.com/wiki/Special:FilePath/Pedro_II_(Civ6).png", "wikiLink": "https://civilization.fandom.com/wiki/Pedro_II_(Civ6)"},
+    {"id": 5, "civilization": "Egito", "civIcon": "https://civilization.fandom.com/wiki/Special:FilePath/Egypt_(Civ6).png", "leader": "Cleópatra", "leaderPortrait": "https://civilization.fandom.com/wiki/Special:FilePath/Cleopatra_(Civ6).png", "wikiLink": "https://civilization.fandom.com/wiki/Cleopatra_(Civ6)"},
+    {"id": 6, "civilization": "Espanha", "civIcon": "https://civilization.fandom.com/wiki/Special:FilePath/Spain_(Civ6).png", "leader": "Filipe II", "leaderPortrait": "https://civilization.fandom.com/wiki/Special:FilePath/Philip_II_(Civ6).png", "wikiLink": "https://civilization.fandom.com/wiki/Philip_II_(Civ6)"},
+    {"id": 7, "civilization": "Alemanha", "civIcon": "https://civilization.fandom.com/wiki/Special:FilePath/Germany_(Civ6).png", "leader": "Frederico Barba-Ruiva", "leaderPortrait": "https://civilization.fandom.com/wiki/Special:FilePath/Frederick_Barbarossa_(Civ6).png", "wikiLink": "https://civilization.fandom.com/wiki/Frederick_Barbarossa_(Civ6)"},
+    {"id": 8, "civilization": "Índia", "civIcon": "https://civilization.fandom.com/wiki/Special:FilePath/India_(Civ6).png", "leader": "Gandhi", "leaderPortrait": "https://civilization.fandom.com/wiki/Special:FilePath/Gandhi_(Civ6).png", "wikiLink": "https://civilization.fandom.com/wiki/Gandhi_(Civ6)"},
+    {"id": 9, "civilization": "Suméria", "civIcon": "https://civilization.fandom.com/wiki/Special:FilePath/Sumeria_(Civ6).png", "leader": "Gilgamesh", "leaderPortrait": "https://civilization.fandom.com/wiki/Special:FilePath/Gilgamesh_(Civ6).png", "wikiLink": "https://civilization.fandom.com/wiki/Gilgamesh_(Civ6)"},
+    {"id": 10, "civilization": "Grécia", "civIcon": "https://civilization.fandom.com/wiki/Special:FilePath/Greece_(Civ6).png", "leader": "Gorgo", "leaderPortrait": "https://civilization.fandom.com/wiki/Special:FilePath/Gorgo_(Civ6).png", "wikiLink": "https://civilization.fandom.com/wiki/Gorgo_(Civ6)"},
+    {"id": 11, "civilization": "Noruega", "civIcon": "https://civilization.fandom.com/wiki/Special:FilePath/Norway_(Civ6).png", "leader": "Haroldo Hardrada", "leaderPortrait": "https://civilization.fandom.com/wiki/Special:FilePath/Harald_Hardrada_(Civ6).png", "wikiLink": "https://civilization.fandom.com/wiki/Harald_Hardrada_(Civ6)"},
+    {"id": 12, "civilization": "Japão", "civIcon": "https://civilization.fandom.com/wiki/Special:FilePath/Japan_(Civ6).png", "leader": "Hojo Tokimune", "leaderPortrait": "https://civilization.fandom.com/wiki/Special:FilePath/Hojo_Tokimune_(Civ6).png", "wikiLink": "https://civilization.fandom.com/wiki/Hojo_Tokimune_(Civ6)"},
+    {"id": 13, "civilization": "Roma", "civIcon": "https://civilization.fandom.com/wiki/Special:FilePath/Rome_(Civ6).png", "leader": "Júlio César", "leaderPortrait": "https://civilization.fandom.com/wiki/Special:FilePath/Julius_Caesar_(Civ6).png", "wikiLink": "https://civilization.fandom.com/wiki/Julius_Caesar_(Civ6)"},
+    {"id": 14, "civilization": "Asteca", "civIcon": "https://civilization.fandom.com/wiki/Special:FilePath/Aztec_(Civ6).png", "leader": "Montezuma", "leaderPortrait": "https://civilization.fandom.com/wiki/Special:FilePath/Montezuma_(Civ6).png", "wikiLink": "https://civilization.fandom.com/wiki/Montezuma_(Civ6)"},
+    {"id": 15, "civilization": "Congo", "civIcon": "https://civilization.fandom.com/wiki/Special:FilePath/Kongo_(Civ6).png", "leader": "Mvemba a Nzinga", "leaderPortrait": "https://civilization.fandom.com/wiki/Special:FilePath/Mvemba_a_Nzinga_(Civ6).png", "wikiLink": "https://civilization.fandom.com/wiki/Mvemba_a_Nzinga_(Civ6)"},
+    {"id": 16, "civilization": "Rússia", "civIcon": "https://civilization.fandom.com/wiki/Special:FilePath/Russia_(Civ6).png", "leader": "Pedro", "leaderPortrait": "https://civilization.fandom.com/wiki/Special:FilePath/Peter_(Civ6).png", "wikiLink": "https://civilization.fandom.com/wiki/Peter_(Civ6)"},
+    {"id": 17, "civilization": "Grécia", "civIcon": "https://civilization.fandom.com/wiki/Special:FilePath/Greece_(Civ6).png", "leader": "Péricles", "leaderPortrait": "https://civilization.fandom.com/wiki/Special:FilePath/Pericles_(Civ6).png", "wikiLink": "https://civilization.fandom.com/wiki/Pericles_(Civ6)"},
+    {"id": 18, "civilization": "China", "civIcon": "https://civilization.fandom.com/wiki/Special:FilePath/China_(Civ6).png", "leader": "Qin Shi Huang", "leaderPortrait": "https://civilization.fandom.com/wiki/Special:FilePath/Qin_Shi_Huang_(Civ6).png", "wikiLink": "https://civilization.fandom.com/wiki/Qin_Shi_Huang_(Civ6)"},
+    {"id": 19, "civilization": "Arábia", "civIcon": "https://civilization.fandom.com/wiki/Special:FilePath/Arabia_(Civ6).png", "leader": "Saladino", "leaderPortrait": "https://civilization.fandom.com/wiki/Special:FilePath/Saladin_(Civ6).png", "wikiLink": "https://civilization.fandom.com/wiki/Saladin_(Civ6)"},
+    {"id": 20, "civilization": "EUA", "civIcon": "https://civilization.fandom.com/wiki/Special:FilePath/America_(Civ6).png", "leader": "Teddy Roosevelt", "leaderPortrait": "https://civilization.fandom.com/wiki/Special:FilePath/Teddy_Roosevelt_(Civ6).png", "wikiLink": "https://civilization.fandom.com/wiki/Teddy_Roosevelt_(Civ6)"},
+    {"id": 21, "civilization": "Cítia", "civIcon": "https://civilization.fandom.com/wiki/Special:FilePath/Scythia_(Civ6).png", "leader": "Tômiris", "leaderPortrait": "https://civilization.fandom.com/wiki/Special:FilePath/Tomyris_(Civ6).png", "wikiLink": "https://civilization.fandom.com/wiki/Tomyris_(Civ6)"},
+    {"id": 22, "civilization": "Inglaterra", "civIcon": "https://civilization.fandom.com/wiki/Special:FilePath/England_(Civ6).png", "leader": "Vitória", "leaderPortrait": "https://civilization.fandom.com/wiki/Special:FilePath/Victoria_(Civ6).png", "wikiLink": "https://civilization.fandom.com/wiki/Victoria_(Civ6)"}
+  ]
+}

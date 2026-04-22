@@ -1,0 +1,188 @@
+{
+  "playerConfig": {
+    "description": "Configurações aplicadas a cada jogador individualmente",
+    "civilization": {
+      "label": "Civilização",
+      "type": "select",
+      "description": "Selecione um líder. Os dados são carregados de leaders.json",
+      "leaderId": null,
+      "leadersSource": "leaders.json",
+      "default": 1,
+      "note": "ID 1 = O jogador escolhe, ID 2 = Aleatório, IDs 3-22 = Líderes específicos"
+    },
+    "difficulty": {
+      "label": "Dificuldade",
+      "type": "select",
+      "description": "Quanto maior a dificuldade, mais cara",
+      "default": "prince",
+      "options": [
+        { "value": "settler", "label": "Colono", "weight": 1 },
+        { "value": "chieftain", "label": "Chefe", "weight": 1 },
+        { "value": "warlord", "label": "Senhor da guerra", "weight": 2 },
+        { "value": "prince", "label": "Príncipe", "weight": 2 },
+        { "value": "king", "label": "Rei", "weight": 3 },
+        { "value": "emperor", "label": "Imperador", "weight": 3 },
+        { "value": "immortal", "label": "Imortal", "weight": 4 },
+        { "value": "deity", "label": "Divindade", "weight": 5 }
+      ]
+    },
+    "maxIdleTurns": {
+      "label": "Turnos parado",
+      "type": "range",
+      "min": 0,
+      "max": 10,
+      "default": 0,
+      "unit": "turnos",
+      "description": "Quantidade de turnos que um jogador pode ficar inativo"
+    },
+    "maxCities": {
+      "label": "Máximo de cidades",
+      "type": "select",
+      "default": "unlimited",
+      "options": [
+        { "value": "unlimited", "label": "Sem limite", "weight": 1, "default": true },
+        { "value": "same_as_others", "label": "Mesma quantidade dos outros jogadores", "weight": 1 }
+      ]
+    }
+  },
+  "matchConfig": {
+    "description": "Configurações aplicadas a toda a partida",
+    "mapType": {
+      "label": "Tipo de Mapa",
+      "type": "select",
+      "description": "Tipo de geração do mapa",
+      "default": "continents",
+      "options": [
+        { "value": "random", "label": "Aleatório", "weight": 2 },
+        { "value": "archipelago", "label": "Arquipélagos", "weight": 2 },
+        { "value": "continents", "label": "Continentes", "weight": 1, "default": true },
+        { "value": "small_continents", "label": "Continentes Pequenos", "weight": 1 },
+        { "value": "mirror", "label": "Espelho", "weight": 2 },
+        { "value": "six_pointed_snowflake", "label": "Floco de neve de 6 pontas", "weight": 2 },
+        { "value": "fractal", "label": "Fractal", "weight": 1 },
+        { "value": "lakes", "label": "Lagos", "weight": 2 },
+        { "value": "mediterranean", "label": "Mediterrâneo", "weight": 1 },
+        { "value": "earth", "label": "Terra (planeta)", "weight": 1 },
+        { "value": "earth_huge", "label": "Terra Enorme", "weight": 3 },
+        { "value": "inland_sea", "label": "Mar Interior", "weight": 2 },
+        { "value": "great_mediterranean", "label": "Mediterrâneo Grande", "weight": 2 },
+        { "value": "pangeia", "label": "Pangeia", "weight": 1 },
+        { "value": "seven_seas", "label": "Sete Mares", "weight": 2 },
+        { "value": "earth_2_pangeia_2", "label": "Terra 2 (pangeia 2)", "weight": 2 },
+        { "value": "earth_2_huge", "label": "Terra enorme", "weight": 3 },
+        { "value": "four_leaf_clover", "label": "Trevo de 4 folhas", "weight": 2 }
+      ]
+    },
+    "cityStates": {
+      "label": "Cidades-estados",
+      "type": "range",
+      "min": 0,
+      "max": 14,
+      "default": 9,
+      "unit": "cidades"
+    },
+    "resources": {
+      "label": "Recursos",
+      "type": "select",
+      "description": "Abundância de recursos no mapa (afeta todos os jogadores igualmente)",
+      "default": "standard",
+      "options": [
+        { "value": "scarce", "label": "Escasso", "weight": 1 },
+        { "value": "standard", "label": "Padrão", "weight": 1, "default": true },
+        { "value": "abundant", "label": "Abundante", "weight": 1 },
+        { "value": "random", "label": "Aleatório", "weight": 1 }
+      ]
+    },
+    "startingPosition": {
+      "label": "Posição inicial",
+      "type": "select",
+      "description": "Como as civilizações iniciam no mapa (afeta todos os jogadores igualmente)",
+      "default": "balanced",
+      "options": [
+        { "value": "balanced", "label": "Balanceada", "weight": 1, "default": true },
+        { "value": "standard", "label": "Padrão", "weight": 1 },
+        { "value": "legendary", "label": "Lendária", "weight": 1 }
+      ]
+    },
+    "temperature": {
+      "label": "Temperatura",
+      "type": "select",
+      "default": "standard",
+      "options": [
+        { "value": "hot", "label": "Quente", "weight": 1 },
+        { "value": "standard", "label": "Padrão", "weight": 1, "default": true },
+        { "value": "cold", "label": "Frio", "weight": 1 },
+        { "value": "random", "label": "Aleatório", "weight": 1 }
+      ]
+    },
+    "precipitation": {
+      "label": "Precipitação",
+      "type": "select",
+      "default": "standard",
+      "options": [
+        { "value": "arid", "label": "Árido", "weight": 1 },
+        { "value": "standard", "label": "Padrão", "weight": 1, "default": true },
+        { "value": "humid", "label": "Úmido", "weight": 1 },
+        { "value": "random", "label": "Aleatório", "weight": 1 }
+      ]
+    },
+    "seaLevel": {
+      "label": "Nível do mar",
+      "type": "select",
+      "default": "standard",
+      "options": [
+        { "value": "low", "label": "Baixo", "weight": 1 },
+        { "value": "standard", "label": "Padrão", "weight": 1, "default": true },
+        { "value": "high", "label": "Alto", "weight": 2 },
+        { "value": "random", "label": "Aleatório", "weight": 1 }
+      ]
+    },
+    "disabledVictoryConditions": {
+      "label": "Desativar condição de vitória",
+      "type": "select",
+      "description": "Desabilita uma condição",
+      "default": null,
+      "options": [
+        { "value": "science", "label": "Científica", "weight": 1 },
+        { "value": "cultural", "label": "Cultural", "weight": 1 },
+        { "value": "domination", "label": "Dominação", "weight": 1 },
+        { "value": "score", "label": "Pontuação", "weight": 1 },
+        { "value": "religious", "label": "Religiosa", "weight": 1 }
+      ]
+    },
+    "randomCivicMode": {
+      "label": "Modo cívico aleatório",
+      "type": "toggle",
+      "weight": 5,
+      "description": "Todos os cívicos são escolhidos aleatoriamente",
+      "default": false
+    },
+    "barbarians": {
+      "label": "Bárbaros",
+      "type": "select",
+      "default": "standard",
+      "options": [
+        { "value": "disabled", "label": "Sem bárbaros", "weight": 3 },
+        { "value": "standard", "label": "Com bárbaros", "weight": 1, "default": true },
+        { "value": "clan_mode", "label": "Modo clã bárbaros", "weight": 2 }
+      ]
+    },
+    "tribalVillages": {
+      "label": "Aldeias tribais",
+      "type": "select",
+      "default": "enabled",
+      "options": [
+        { "value": "disabled", "label": "Sem aldeias", "weight": 3 },
+        { "value": "enabled", "label": "Com aldeias", "weight": 1, "default": true }
+      ]
+    },
+    "bannedCivilizations": {
+      "label": "Banir civilização",
+      "type": "select",
+      "description": "Votação para banir um líder (convertido de multiselect)",
+      "default": null,
+      "leadersSource": "leaders.json",
+      "note": "Use os IDs (1-22) dos líderes de leaders.json para nomear as opções"
+    }
+  }
+}
