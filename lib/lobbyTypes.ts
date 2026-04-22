@@ -15,6 +15,7 @@ export type ServerPlayer = Player & { id: string };
 export type ClientMessage =
   | { type: "join"; payload: { nickname: string; isHost: boolean; config?: RoomConfig } }
   | { type: "toggle_ready" }
+  | { type: "update_config"; payload: { config: RoomConfig } }
   | { type: "ping" };
 
 // Mensagens servidor → cliente

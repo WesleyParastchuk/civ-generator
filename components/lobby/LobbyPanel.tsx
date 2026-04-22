@@ -1,7 +1,7 @@
 import { RoomCodeDisplay } from "./RoomCodeDisplay";
-import { RoomConfigBadge } from "./RoomConfigBadge";
 import { PlayerList } from "./PlayerList";
 import { ReadyButton } from "./ReadyButton";
+import { ConfigPanel } from "@/components/game/ConfigPanel";
 import type { RoomConfig, ServerPlayer } from "@/lib/lobbyTypes";
 
 type Props = {
@@ -9,10 +9,12 @@ type Props = {
   players: ServerPlayer[];
   myId: string | null;
   myReady: boolean;
+  isHost: boolean;
+  onConfigChange: (config: RoomConfig) => void;
   onToggleReady: () => void;
 };
 
-export function LobbyPanel({ config, players, myId, myReady, onToggleReady }: Props) {
+export function LobbyPanel({ config, players, myId, myReady, isHost, onConfigChange, onToggleReady }: Props) {
   return (
     <section className="relative w-full max-w-5xl">
       <div className="greek-column left-column" aria-hidden />
@@ -22,8 +24,8 @@ export function LobbyPanel({ config, players, myId, myReady, onToggleReady }: Pr
         <RoomCodeDisplay />
 
         {config && (
-          <div className="mt-4 flex flex-wrap gap-2">
-            <RoomConfigBadge turns={config.turns} pointsPerTurn={config.pointsPerTurn} />
+          <div className="mt-6">
+            <ConfigPanel config={config} editable={isHost} onChange={onConfigChange} />
           </div>
         )}
 

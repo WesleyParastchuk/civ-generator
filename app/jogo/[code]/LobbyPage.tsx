@@ -85,6 +85,11 @@ function LobbyConnected({ code, playerInfo }: ConnectedProps) {
     socket.send(JSON.stringify(msg));
   };
 
+  const handleConfigChange = (newConfig: RoomConfig) => {
+    const msg: ClientMessage = { type: "update_config", payload: { config: newConfig } };
+    socket.send(JSON.stringify(msg));
+  };
+
   if (countdown !== null) {
     return <CountdownOverlay seconds={countdown} />;
   }
@@ -116,6 +121,8 @@ function LobbyConnected({ code, playerInfo }: ConnectedProps) {
       players={players}
       myId={myId}
       myReady={myPlayer?.ready ?? false}
+      isHost={playerInfo.isHost}
+      onConfigChange={handleConfigChange}
       onToggleReady={handleToggleReady}
     />
   );

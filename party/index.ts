@@ -25,6 +25,12 @@ export default class LobbyServer implements Party.Server {
       const welcome: ServerMessage = { type: "welcome", payload: { connectionId: sender.id } };
       sender.send(JSON.stringify(welcome));
       this.broadcast();
+    } else if (msg.type === "update_config") {
+      const player = this.players.get(sender.id);
+      if (player?.isHost) {
+        this.config = msg.payload.config;
+        this.broadcast();
+      }
     } else if (msg.type === "toggle_ready") {
       const player = this.players.get(sender.id);
       if (player) {
