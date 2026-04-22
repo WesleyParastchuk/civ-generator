@@ -1,12 +1,27 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { Compass, Crown, UsersRound } from "lucide-react";
 import { OptionsPreview } from "./OptionsPreview";
 import { StartButton } from "./StartButton";
+import { generateRoomCode } from "@/lib/generateRoomCode";
+import { saveLobbySession } from "@/lib/sessionLobby";
 
 export default function HeroPanel() {
+  const router = useRouter();
+  const [turns, setTurns] = useState(3);
+  const [pointsPerTurn, setPointsPerTurn] = useState(10);
+
   const handleStartSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const nickname = (formData.get("playerNickname") as string).trim();
+    if (!nickname) return;
+
+    const code = generateRoomCode();
+    saveLobbySession(code, { nickname, isHost: true, config: { turns, pointsPerTurn } });
+    router.push(`/jogo/${code}`);
   };
 
   return (
@@ -51,7 +66,12 @@ export default function HeroPanel() {
           </div>
         </div>
 
-        <OptionsPreview />
+        <OptionsPreview
+          turns={turns}
+          onTurnsChange={setTurns}
+          pointsPerTurn={pointsPerTurn}
+          onPointsPerTurnChange={setPointsPerTurn}
+        />
       </div>
     </section>
   );
