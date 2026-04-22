@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Minus, Plus } from "lucide-react";
+import { Minus, Plus, ThumbsUp } from "lucide-react";
 import type { ConfigFieldSchema, SelectFieldSchema, ToggleFieldSchema, RangeFieldSchema } from "@/lib/lobbyTypes";
 
 export type LeaderEntry = {
@@ -15,8 +15,8 @@ type BaseProps = {
   schema: ConfigFieldSchema;
   leaders: LeaderEntry[];
   pointsRemaining: number;
-  turnVoteTally: Record<string, number>; // value string → total weight all voters this turn
-  myVotedThisField: boolean;            // current player already voted this (scope, field) this turn
+  turnVoteTally: Record<string, number>;   // all voters: value → total weight this turn
+  myTurnVoteTally: Record<string, number>; // this player only: value → weight this turn
   onVote: (value: string | number | boolean, weight: number) => void;
 };
 
@@ -31,12 +31,12 @@ export function VotingField(props: BaseProps) {
 }
 
 // ---------------------------------------------------------------------------
-// Select — dropdown with single vote per turn
+// Select — dropdown, multiple votes allowed, shows my spend per option
 // ---------------------------------------------------------------------------
 
 type SelectProps = Omit<BaseProps, "schema"> & { schema: SelectFieldSchema };
 
-function SelectVoteField({ schema, leaders, pointsRemaining, turnVoteTally, myVotedThisField, onVote }: SelectProps) {
+function SelectVoteField({ schema, leaders, pointsRemaining, turnVoteTally, myTurnVoteTally, onVote }: SelectProps) {
   const options = buildSelectOptions(schema, leaders);
   const [selectedValue, setSelectedValue] = useState<string>(
     String(options[0]?.value ?? ""),
@@ -44,48 +44,54 @@ function SelectVoteField({ schema, leaders, pointsRemaining, turnVoteTally, myVo
 
   const selectedOpt = options.find((o) => String(o.value) === selectedValue);
   const weight = selectedOpt?.weight ?? 1;
-  const canVote = !myVotedThisField && pointsRemaining >= weight;
+  const canVote = pointsRemaining >= weight;
+  const mySpentOnSelected = myTurnVoteTally[selectedValue] ?? 0;
 
   const tallyEntries = Object.entries(turnVoteTally)
     .filter(([, pts]) => pts > 0)
     .sort(([, a], [, b]) => b - a);
 
   return (
-    <div className="rounded-lg border border-[rgb(190_153_81_/_0.2)] bg-[rgb(10_20_34_/_0.6)] px-3 py-3">
-      <div className="flex items-center gap-2">
-        <select
-          value={selectedValue}
-          onChange={(e) => setSelectedValue(e.target.value)}
-          disabled={myVotedThisField}
-          className="h-9 flex-1 rounded-lg border border-[rgb(190_153_81_/_0.35)] bg-[rgb(11_25_44_/_0.9)] px-2 text-sm text-[rgb(232_209_158_/_0.9)] outline-none focus:border-[rgb(214_178_97_/_0.6)] disabled:opacity-50"
-        >
-          {options.map((opt) => (
-            <option
-              key={String(opt.value)}
-              value={String(opt.value)}
-              className="bg-[rgb(11_25_44)] text-[rgb(232_209_158)]"
-            >
-              {opt.label} — {opt.weight} pt{opt.weight !== 1 ? "s" : ""}
-            </option>
-          ))}
-        </select>
+    <div className="rounded-lg border border-[rgb(190_153_81_/_0.2)] bg-[rgb(10_20_34_/_0.6)] px-3 py-3 space-y-2">
+      <select
+        value={selectedValue}
+        onChange={(e) => setSelectedValue(e.target.value)}
+        className="h-10 w-full rounded-lg border border-[rgb(190_153_81_/_0.35)] bg-[rgb(11_25_44_/_0.9)] px-3 text-sm text-[rgb(232_209_158_/_0.9)] outline-none focus:border-[rgb(214_178_97_/_0.6)]"
+      >
+        {options.map((opt) => (
+          <option
+            key={String(opt.value)}
+            value={String(opt.value)}
+            className="bg-[rgb(11_25_44)] text-[rgb(232_209_158)]"
+          >
+            {opt.label} — {opt.weight} pt{opt.weight !== 1 ? "s" : ""}
+          </option>
+        ))}
+      </select>
+
+      <div className="flex items-center justify-between gap-3">
+        {mySpentOnSelected > 0 ? (
+          <span className="text-xs text-[rgb(214_178_97_/_0.8)]">
+            Você gastou <span className="font-bold">{mySpentOnSelected} pts</span> aqui este turno
+          </span>
+        ) : (
+          <span className="text-xs text-[rgb(206_189_156_/_0.4)]">Sem votos seus aqui ainda</span>
+        )}
+
         <button
           type="button"
           disabled={!canVote}
           onClick={() => { if (selectedOpt) onVote(selectedOpt.value, weight); }}
-          className="game-control-button h-9 shrink-0 rounded-lg px-3 text-xs font-semibold"
+          className="game-control-button inline-flex shrink-0 items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-40"
           aria-label={`Votar em ${selectedOpt?.label ?? ""}`}
         >
-          Votar
+          <ThumbsUp className="h-4 w-4" />
+          Votar · {weight} pt{weight !== 1 ? "s" : ""}
         </button>
       </div>
-      {myVotedThisField && (
-        <p className="mt-1.5 text-xs text-[rgb(206_189_156_/_0.5)]">
-          Voto registrado neste turno.
-        </p>
-      )}
+
       {tallyEntries.length > 0 && (
-        <p className="mt-1.5 text-xs text-[rgb(206_189_156_/_0.45)] leading-relaxed">
+        <p className="text-xs text-[rgb(206_189_156_/_0.45)] leading-relaxed">
           {tallyEntries.map(([val, pts]) => {
             const lbl = options.find((o) => String(o.value) === val)?.label ?? val;
             return `${lbl}: ${pts}pts`;
