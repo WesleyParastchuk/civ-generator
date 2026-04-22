@@ -166,8 +166,17 @@ export default class LobbyServer implements Party.Server {
   startNextTurn() {
     if (this.betweenTurnsTimer) { clearTimeout(this.betweenTurnsTimer); this.betweenTurnsTimer = null; }
     if (this.gamePhase !== "between_turns") return;
+
+    // Carry unspent points into next turn as negative initial spend
+    const prevLedger = this.currentLedger!;
+    const initialSpend: Record<string, number> = {};
+    for (const [playerId] of this.players) {
+      const unspent = this.config!.pointsPerTurn - (prevLedger.spendByVoter[playerId] ?? 0);
+      if (unspent > 0) initialSpend[playerId] = -unspent;
+    }
+
     this.currentTurn += 1;
-    this.currentLedger = { turn: this.currentTurn, votes: [], spendByVoter: {} };
+    this.currentLedger = { turn: this.currentTurn, votes: [], spendByVoter: initialSpend };
     this.gamePhase = "playing";
     this.betweenTurnsDeadline = 0;
     this.startTurnTimer();

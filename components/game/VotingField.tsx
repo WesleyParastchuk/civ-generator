@@ -51,7 +51,9 @@ type NormalizedOption = {
 
 function SelectVoteField({ schema, leaders, pointsRemaining, myTurnVoteTally, onVote, onRemoveVote }: SelectProps) {
   const options = buildSelectOptions(schema, leaders);
-  const [selectedValue, setSelectedValue] = useState<string>(String(options[0]?.value ?? ""));
+  const [selectedValue, setSelectedValue] = useState<string>(
+    schema.default != null ? String(schema.default) : String(options[0]?.value ?? ""),
+  );
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -276,7 +278,11 @@ function RangeVoteField({ schema, pointsRemaining, turnVoteTally, onVote }: Rang
 
 function buildSelectOptions(schema: SelectFieldSchema, leaders: LeaderEntry[]): NormalizedOption[] {
   if (schema.options) {
-    return schema.options.map((o) => ({ value: o.value, label: o.label, weight: o.weight }));
+    const opts = schema.options.map((o) => ({ value: o.value, label: o.label, weight: o.weight }));
+    if (schema.default === null) {
+      return [{ value: "", label: "— Nenhum —", weight: 1 }, ...opts];
+    }
+    return opts;
   }
   if (schema.leadersSource) {
     return leaders
