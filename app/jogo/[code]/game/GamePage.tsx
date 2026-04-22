@@ -15,7 +15,6 @@ import type {
 } from "@/lib/lobbyTypes";
 import { Globe, User } from "lucide-react";
 import { TurnHeader } from "@/components/game/TurnHeader";
-import { TurnFooter } from "@/components/game/TurnFooter";
 import { BetweenTurnsOverlay } from "@/components/game/BetweenTurnsOverlay";
 import { VotingField, type LeaderEntry } from "@/components/game/VotingField";
 import { GameOverScreen } from "@/components/game/GameOverScreen";
@@ -270,12 +269,6 @@ export function GamePage({ code }: { code: string }) {
 
         {/* Sticky footer */}
         <div className="shrink-0 px-5 pb-5 sm:px-8 sm:pb-8">
-          <TurnFooter
-            pointsSpent={mySpent}
-            pointsPerTurn={pointsPerTurn}
-            votesThisTurn={myVotesThisTurn}
-          />
-
           {/* End-turn button — all players must confirm */}
           {votingState?.phase === "playing" && (
             <div className="mt-4 flex justify-end">
