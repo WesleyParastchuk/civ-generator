@@ -20,7 +20,7 @@ import { VotingField, type LeaderEntry } from "@/components/game/VotingField";
 import { GameOverScreen } from "@/components/game/GameOverScreen";
 
 type GameSession = {
-  config: { turns: number; pointsPerTurn: number };
+  config: { turns: number; pointsPerTurn: number; turnDurationSeconds: number };
   isHost: boolean;
   nickname: string;
 };
@@ -167,8 +167,7 @@ export function GamePage({ code }: { code: string }) {
         <BetweenTurnsOverlay
           nextTurn={currentTurn + 1}
           totalTurns={totalTurns}
-          isHost={session.isHost}
-          onConfirm={handleConfirmNextTurn}
+          betweenDeadline={votingState.betweenTurnsDeadline}
         />
       )}
 
@@ -183,6 +182,7 @@ export function GamePage({ code }: { code: string }) {
             totalTurns={totalTurns}
             pointsPerTurn={pointsPerTurn}
             pointsSpent={mySpent}
+            deadline={votingState?.turnDeadline ?? 0}
           />
         </div>
 

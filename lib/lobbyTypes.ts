@@ -1,6 +1,7 @@
 export type RoomConfig = {
   turns: number;
   pointsPerTurn: number;
+  turnDurationSeconds: number;
 };
 
 export type Player = {
@@ -121,13 +122,13 @@ export type VotingState = {
   currentTurn: number;
   totalTurns: number;
   pointsPerTurn: number;
-  // Points spent by each player in the current turn
+  // UTC ms deadline for current turn (0 when not in playing phase)
+  turnDeadline: number;
+  // UTC ms deadline for between-turns countdown (0 when not in between_turns phase)
+  betweenTurnsDeadline: number;
   spendByVoter: Record<string, number>;
-  // Votes cast in the current turn (visible to all)
   currentTurnVotes: VoteCast[];
-  // Pending tie-breaks (only present in game_over phase)
   pendingTieBreaks?: TieBreakPending[];
-  // Final resolved config (only present after all tie-breaks resolved)
   finalConfig?: FinalConfig;
 };
 

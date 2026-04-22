@@ -14,6 +14,8 @@ import type {
 } from "../lib/lobbyTypes";
 
 const INACTIVITY_MS = 30 * 60 * 1000;
+const BETWEEN_TURNS_MS = 5000;
+const DEFAULT_TURN_DURATION_S = 120;
 
 function scopeKey(scope: VoteScope): string {
   if (scope === "match") return "match";
@@ -44,6 +46,12 @@ export default class LobbyServer implements Party.Server {
 
   // Final resolved config
   finalConfig: FinalConfig | null = null;
+
+  // Countdown timers
+  turnDeadline: number = 0; // UTC ms when current turn ends
+  turnTimer: ReturnType<typeof setTimeout> | null = null;
+  betweenTurnsDeadline: number = 0; // UTC ms when between-turns ends
+  betweenTurnsTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(readonly room: Party.Room) {}
 
@@ -81,7 +89,6 @@ export default class LobbyServer implements Party.Server {
         this.broadcast();
         const all = [...this.players.values()];
         if (all.length >= 1 && all.every((p) => p.ready)) {
-          // Start the game
           this.gamePhase = "playing";
           this.currentTurn = 1;
           this.currentLedger = { turn: 1, votes: [], spendByVoter: {} };
@@ -94,6 +101,7 @@ export default class LobbyServer implements Party.Server {
             payload: { remainingMs: 5000 },
           };
           this.room.broadcast(JSON.stringify(startMsg));
+          this.startTurnTimer();
           this.broadcastVotingState();
         }
       }
@@ -110,66 +118,26 @@ export default class LobbyServer implements Party.Server {
     } else if (msg.type === "resolve_tie") {
       this.handleResolveTie(sender, msg.payload);
     }
-    // ping: timer already reset above, nothing else to do
   }
 
-  handleCastVote(
-    sender: Party.Connection,
-    payload: { scope: VoteScope; field: string; value: string | number | boolean; weight: number }
-  ) {
-    if (!this.config) return;
-    // Validate phase
-    if (this.gamePhase !== "playing") return;
-
-    // Validate sender is a connected player
-    if (!this.players.has(sender.id)) return;
-
-    const { scope, field, value, weight } = payload;
-
-    // Validate weight
-    if (weight < 1) return;
-
-    // Validate scope: if playerConfig scope, that player must be connected
-    if (scope !== "match") {
-      if (!this.players.has(scope.playerId)) return;
-    }
-
-    // Validate player has enough points remaining this turn
-    const pointsPerTurn = this.config?.pointsPerTurn ?? 0;
-    const ledger = this.currentLedger!;
-    const spent = ledger.spendByVoter[sender.id] ?? 0;
-    if (pointsPerTurn - spent < weight) return;
-
-    // Build VoteCast record
-    const vote: VoteCast = {
-      voterId: sender.id,
-      scope,
-      field,
-      value,
-      weight,
-    };
-
-    // Add to ledger
-    ledger.votes.push(vote);
-    ledger.spendByVoter[sender.id] = spent + weight;
-
-    // Add to accumulator
-    const key = accumulatorKey(scope, field, value);
-    this.accumulator[key] = (this.accumulator[key] ?? 0) + weight;
-
-    // Broadcast updated voting state
-    this.broadcastVotingState();
+  // Sets turnDeadline and schedules auto-end
+  startTurnTimer() {
+    if (this.turnTimer) clearTimeout(this.turnTimer);
+    const durationMs = (this.config?.turnDurationSeconds ?? DEFAULT_TURN_DURATION_S) * 1000;
+    this.turnDeadline = Date.now() + durationMs;
+    this.turnTimer = setTimeout(() => {
+      this.endTurn();
+    }, durationMs);
   }
 
-  handleEndTurn(sender: Party.Connection) {
-    const player = this.players.get(sender.id);
-    if (!player?.isHost) return;
+  // Transitions playing → between_turns (or game_over on last turn)
+  endTurn() {
     if (this.gamePhase !== "playing") return;
     if (!this.config) return;
+    if (this.turnTimer) { clearTimeout(this.turnTimer); this.turnTimer = null; }
+    this.turnDeadline = 0;
 
     const ledger = this.currentLedger!;
-
-    // Broadcast the turn snapshot
     const snapshotMsg: ServerMessage = {
       type: "voting_snapshot_turn_end",
       payload: { turn: ledger.turn, ledger },
@@ -177,47 +145,91 @@ export default class LobbyServer implements Party.Server {
     this.room.broadcast(JSON.stringify(snapshotMsg));
 
     if (this.currentTurn < this.config.turns) {
-      // Move to between_turns; wait for confirm_next_turn
       this.gamePhase = "between_turns";
+      this.betweenTurnsDeadline = Date.now() + BETWEEN_TURNS_MS;
       this.broadcastVotingState();
+      // Auto-advance after 5s
+      if (this.betweenTurnsTimer) clearTimeout(this.betweenTurnsTimer);
+      this.betweenTurnsTimer = setTimeout(() => {
+        this.startNextTurn();
+      }, BETWEEN_TURNS_MS);
     } else {
-      // Last turn: consolidate and move to game_over
       this.gamePhase = "game_over";
+      this.betweenTurnsDeadline = 0;
       this.consolidateFinalConfig();
     }
+  }
+
+  startNextTurn() {
+    if (this.betweenTurnsTimer) { clearTimeout(this.betweenTurnsTimer); this.betweenTurnsTimer = null; }
+    if (this.gamePhase !== "between_turns") return;
+    this.currentTurn += 1;
+    this.currentLedger = { turn: this.currentTurn, votes: [], spendByVoter: {} };
+    this.gamePhase = "playing";
+    this.betweenTurnsDeadline = 0;
+    this.startTurnTimer();
+    this.broadcastVotingState();
+  }
+
+  handleCastVote(
+    sender: Party.Connection,
+    payload: { scope: VoteScope; field: string; value: string | number | boolean; weight: number }
+  ) {
+    if (!this.config) return;
+    if (this.gamePhase !== "playing") return;
+    if (!this.players.has(sender.id)) return;
+
+    const { scope, field, value, weight } = payload;
+    if (weight < 1) return;
+
+    if (scope !== "match") {
+      if (!this.players.has(scope.playerId)) return;
+    }
+
+    const pointsPerTurn = this.config.pointsPerTurn;
+    const ledger = this.currentLedger!;
+    const spent = ledger.spendByVoter[sender.id] ?? 0;
+    if (pointsPerTurn - spent < weight) return;
+
+    const vote: VoteCast = { voterId: sender.id, scope, field, value, weight };
+    ledger.votes.push(vote);
+    ledger.spendByVoter[sender.id] = spent + weight;
+
+    const key = accumulatorKey(scope, field, value);
+    this.accumulator[key] = (this.accumulator[key] ?? 0) + weight;
+
+    this.broadcastVotingState();
+  }
+
+  handleEndTurn(sender: Party.Connection) {
+    const player = this.players.get(sender.id);
+    if (!player?.isHost) return;
+    if (this.gamePhase !== "playing") return;
+    this.endTurn();
   }
 
   handleConfirmNextTurn(sender: Party.Connection) {
     const player = this.players.get(sender.id);
     if (!player?.isHost) return;
     if (this.gamePhase !== "between_turns") return;
-
-    this.currentTurn += 1;
-    this.currentLedger = { turn: this.currentTurn, votes: [], spendByVoter: {} };
-    this.gamePhase = "playing";
-    this.broadcastVotingState();
+    this.startNextTurn();
   }
 
   consolidateFinalConfig() {
     const connectedPlayerIds = [...this.players.keys()];
 
-    // Build finalConfig with winners
     const matchResult: Record<string, string | number | boolean | null> = {};
     const playersResult: Record<string, Record<string, string | number | boolean | null>> = {};
     const newPendingTieBreaks: TieBreakPending[] = [];
 
-    // Gather all unique scope:field combinations from accumulator
     const matchFields = new Set<string>();
-    const playerFields = new Map<string, Set<string>>(); // playerId → Set<field>
+    const playerFields = new Map<string, Set<string>>();
 
     for (const key of Object.keys(this.accumulator)) {
-      // key format: "match|field|value" or "player|playerId|field|value"
       if (key.startsWith("match|")) {
         const rest = key.slice("match|".length);
         const pipeIdx = rest.indexOf("|");
-        if (pipeIdx !== -1) {
-          matchFields.add(rest.slice(0, pipeIdx));
-        }
+        if (pipeIdx !== -1) matchFields.add(rest.slice(0, pipeIdx));
       } else if (key.startsWith("player|")) {
         const rest = key.slice("player|".length);
         const parts = rest.split("|");
@@ -230,7 +242,6 @@ export default class LobbyServer implements Party.Server {
       }
     }
 
-    // Resolve match fields
     for (const field of matchFields) {
       const { winner, tied, tiedValues, maxWeight } = this.resolveField("match", field);
       if (tied) {
@@ -241,7 +252,6 @@ export default class LobbyServer implements Party.Server {
       }
     }
 
-    // Resolve player fields — only for currently connected players
     for (const playerId of connectedPlayerIds) {
       playersResult[playerId] = {};
       const fields = playerFields.get(playerId) ?? new Set<string>();
@@ -280,10 +290,9 @@ export default class LobbyServer implements Party.Server {
     tiedValues: Array<string | number | boolean>;
     maxWeight: number;
   } {
-    // Find all accumulator entries for this scope+field
     const prefix = `${scopeKey(scope)}|${field}|`;
     let maxWeight = 0;
-    const candidateMap = new Map<string, number>(); // rawValue → weight
+    const candidateMap = new Map<string, number>();
 
     for (const [key, weight] of Object.entries(this.accumulator)) {
       if (key.startsWith(prefix)) {
@@ -303,15 +312,10 @@ export default class LobbyServer implements Party.Server {
     }
 
     if (winners.length === 1) {
-      // Try to coerce back to original type — stored as String(value)
-      const raw = winners[0];
-      const coerced = coerceValue(raw);
-      return { winner: coerced, tied: false, tiedValues: [], maxWeight };
+      return { winner: coerceValue(winners[0]), tied: false, tiedValues: [], maxWeight };
     }
 
-    // Tie
-    const tiedValues = winners.map(coerceValue);
-    return { winner: null, tied: true, tiedValues, maxWeight };
+    return { winner: null, tied: true, tiedValues: winners.map(coerceValue), maxWeight };
   }
 
   handleResolveTie(
@@ -324,8 +328,6 @@ export default class LobbyServer implements Party.Server {
     if (this.pendingTieBreaks.length === 0) return;
 
     const { scope, field, value } = payload;
-
-    // Find matching tie-break
     const idx = this.pendingTieBreaks.findIndex(
       (tb) => scopeKey(tb.scope) === scopeKey(scope) && tb.field === field
     );
@@ -334,22 +336,17 @@ export default class LobbyServer implements Party.Server {
     const pending = this.pendingTieBreaks[idx];
     if (!pending.tiedValues.some((v) => String(v) === String(value))) return;
 
-    // Apply the resolved value to finalConfig
     if (!this.finalConfig) return;
 
     if (scope === "match") {
       this.finalConfig.match[field] = value;
     } else {
       const { playerId } = scope;
-      if (!this.finalConfig.players[playerId]) {
-        this.finalConfig.players[playerId] = {};
-      }
+      if (!this.finalConfig.players[playerId]) this.finalConfig.players[playerId] = {};
       this.finalConfig.players[playerId][field] = value;
     }
 
-    // Remove resolved tie-break
     this.pendingTieBreaks.splice(idx, 1);
-
     this.broadcastVotingState();
   }
 
@@ -361,6 +358,8 @@ export default class LobbyServer implements Party.Server {
       currentTurn: this.currentTurn,
       totalTurns: this.config.turns,
       pointsPerTurn: this.config.pointsPerTurn,
+      turnDeadline: this.gamePhase === "playing" ? this.turnDeadline : 0,
+      betweenTurnsDeadline: this.gamePhase === "between_turns" ? this.betweenTurnsDeadline : 0,
       spendByVoter: ledger?.spendByVoter ?? {},
       currentTurnVotes: ledger?.votes ?? [],
       ...(this.pendingTieBreaks.length > 0 ? { pendingTieBreaks: this.pendingTieBreaks } : {}),
@@ -410,11 +409,6 @@ export default class LobbyServer implements Party.Server {
 
 LobbyServer satisfies Party.Worker;
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/** Attempt to coerce a raw string (from accumulator key) back to its original type. */
 function coerceValue(raw: string): string | number | boolean {
   if (raw === "true") return true;
   if (raw === "false") return false;
