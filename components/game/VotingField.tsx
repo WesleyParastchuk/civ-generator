@@ -65,22 +65,24 @@ function SelectVoteField({ schema, leaders, pointsRemaining, myTurnVoteTally, on
         ))}
       </select>
 
-      <button
-        type="button"
-        disabled={!canVote}
-        onClick={() => { if (selectedOpt) onVote(selectedOpt.value, weight); }}
-        className="game-control-button flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold disabled:opacity-40"
-        aria-label={`Votar em ${selectedOpt?.label ?? ""}`}
-      >
-        <ThumbsUp className="h-4 w-4 shrink-0" />
-        Votar · {weight} pt{weight !== 1 ? "s" : ""}
-      </button>
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          disabled={!canVote}
+          onClick={() => { if (selectedOpt) onVote(selectedOpt.value, weight); }}
+          aria-label={`Votar em ${selectedOpt?.label ?? ""}`}
+          className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-[rgb(214_178_97_/_0.54)] bg-gradient-to-b from-[rgb(24_53_84_/_0.94)] to-[rgb(13_28_48_/_0.96)] py-2.5 text-sm font-semibold text-[rgb(237_210_148_/_0.96)] shadow-[inset_0_0_0_1px_rgb(255_220_150_/_0.07)] transition-all duration-150 hover:not-disabled:brightness-110 hover:not-disabled:-translate-y-px disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <ThumbsUp className="h-4 w-4 shrink-0" />
+          Votar · {weight} pt{weight !== 1 ? "s" : ""}
+        </button>
 
-      {mySpentOnSelected > 0 && (
-        <span className="text-xs text-[rgb(214_178_97_/_0.8)]">
-          Seus votos: <span className="font-bold">{mySpentOnSelected} pts</span>
-        </span>
-      )}
+        {mySpentOnSelected > 0 && (
+          <span className="shrink-0 text-xs text-[rgb(214_178_97_/_0.8)]">
+            Seus: <span className="font-bold">{mySpentOnSelected} pts</span>
+          </span>
+        )}
+      </div>
     </div>
   );
 }
