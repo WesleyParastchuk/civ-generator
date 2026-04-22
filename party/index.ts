@@ -30,6 +30,14 @@ export default class LobbyServer implements Party.Server {
       if (player) {
         player.ready = !player.ready;
         this.broadcast();
+        const all = [...this.players.values()];
+        if (all.length >= 1 && all.every((p) => p.ready)) {
+          const startMsg: ServerMessage = {
+            type: "game_starting",
+            payload: { remainingMs: 5000 },
+          };
+          this.room.broadcast(JSON.stringify(startMsg));
+        }
       }
     }
     // ping: timer already reset above, nothing else to do
