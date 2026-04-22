@@ -109,6 +109,9 @@ export default class LobbyServer implements Party.Server {
     } else if (msg.type === "cast_vote") {
       this.handleCastVote(sender, msg.payload);
 
+    } else if (msg.type === "remove_vote") {
+      this.handleRemoveVote(sender, msg.payload);
+
     } else if (msg.type === "end_turn") {
       this.handleEndTurn(sender);
 
@@ -197,6 +200,40 @@ export default class LobbyServer implements Party.Server {
 
     const key = accumulatorKey(scope, field, value);
     this.accumulator[key] = (this.accumulator[key] ?? 0) + weight;
+
+    this.broadcastVotingState();
+  }
+
+  handleRemoveVote(
+    sender: Party.Connection,
+    payload: { scope: VoteScope; field: string; value: string | number | boolean }
+  ) {
+    if (this.gamePhase !== "playing") return;
+    if (!this.players.has(sender.id)) return;
+
+    const { scope, field, value } = payload;
+    const ledger = this.currentLedger!;
+
+    // Find last matching vote by this player
+    const idx = [...ledger.votes].reverse().findIndex(
+      (v) =>
+        v.voterId === sender.id &&
+        v.field === field &&
+        String(v.value) === String(value) &&
+        (scope === "match"
+          ? v.scope === "match"
+          : v.scope !== "match" && v.scope.playerId === (scope as { playerId: string }).playerId)
+    );
+    if (idx === -1) return;
+
+    const realIdx = ledger.votes.length - 1 - idx;
+    const removed = ledger.votes[realIdx];
+    ledger.votes.splice(realIdx, 1);
+    ledger.spendByVoter[sender.id] = Math.max(0, (ledger.spendByVoter[sender.id] ?? 0) - removed.weight);
+
+    const key = accumulatorKey(scope, field, value);
+    this.accumulator[key] = Math.max(0, (this.accumulator[key] ?? 0) - removed.weight);
+    if (this.accumulator[key] === 0) delete this.accumulator[key];
 
     this.broadcastVotingState();
   }

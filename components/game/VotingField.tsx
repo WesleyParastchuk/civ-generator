@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import { Minus, Plus, ThumbsUp } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ChevronDown, Minus, Plus, ThumbsUp } from "lucide-react";
 import type { ConfigFieldSchema, SelectFieldSchema, ToggleFieldSchema, RangeFieldSchema } from "@/lib/lobbyTypes";
 
 export type LeaderEntry = {
   id: number;
   civilization: string;
   leader: string;
+  civIcon?: string;
+  leaderPortrait?: string;
 };
 
 type BaseProps = {
@@ -18,6 +20,7 @@ type BaseProps = {
   turnVoteTally: Record<string, number>;   // all voters: value → total weight this turn
   myTurnVoteTally: Record<string, number>; // this player only: value → weight this turn
   onVote: (value: string | number | boolean, weight: number) => void;
+  onRemoveVote: (value: string | number | boolean) => void;
 };
 
 export function VotingField(props: BaseProps) {
@@ -31,46 +34,115 @@ export function VotingField(props: BaseProps) {
 }
 
 // ---------------------------------------------------------------------------
-// Select — dropdown, multiple votes allowed, shows my spend per option
+// Select — custom dropdown with images, multiple votes allowed
 // ---------------------------------------------------------------------------
 
 type SelectProps = Omit<BaseProps, "schema"> & { schema: SelectFieldSchema };
+type ToggleProps = Omit<BaseProps, "schema"> & { schema: ToggleFieldSchema };
+type RangeProps = Omit<BaseProps, "schema"> & { schema: RangeFieldSchema };
 
-function SelectVoteField({ schema, leaders, pointsRemaining, myTurnVoteTally, onVote }: SelectProps) {
+type NormalizedOption = {
+  value: string | number;
+  label: string;
+  weight: number;
+  civIcon?: string;
+  leaderPortrait?: string;
+};
+
+function SelectVoteField({ schema, leaders, pointsRemaining, myTurnVoteTally, onVote, onRemoveVote }: SelectProps) {
   const options = buildSelectOptions(schema, leaders);
-  const [selectedValue, setSelectedValue] = useState<string>(
-    String(options[0]?.value ?? ""),
-  );
+  const [selectedValue, setSelectedValue] = useState<string>(String(options[0]?.value ?? ""));
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   const selectedOpt = options.find((o) => String(o.value) === selectedValue);
   const weight = selectedOpt?.weight ?? 1;
   const canVote = pointsRemaining >= weight;
   const mySpentOnSelected = myTurnVoteTally[selectedValue] ?? 0;
 
+  const hasImages = schema.leadersSource;
+
   return (
     <div className="rounded-lg border border-[rgb(190_153_81_/_0.2)] bg-[rgb(10_20_34_/_0.6)] px-3 py-3 space-y-2">
-      <select
-        value={selectedValue}
-        onChange={(e) => setSelectedValue(e.target.value)}
-        className="h-10 w-full rounded-lg border border-[rgb(190_153_81_/_0.35)] bg-[rgb(11_25_44_/_0.9)] px-3 text-sm text-[rgb(232_209_158_/_0.9)] outline-none focus:border-[rgb(214_178_97_/_0.6)]"
-      >
-        {options.map((opt) => (
-          <option
-            key={String(opt.value)}
-            value={String(opt.value)}
-            className="bg-[rgb(11_25_44)] text-[rgb(232_209_158)]"
-          >
-            {opt.label} — {opt.weight} pt{opt.weight !== 1 ? "s" : ""}
-          </option>
-        ))}
-      </select>
+      {/* Custom dropdown trigger */}
+      <div ref={containerRef} className="relative">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="flex w-full items-center gap-2 rounded-lg border border-[rgb(190_153_81_/_0.35)] bg-[rgb(11_25_44_/_0.9)] px-3 py-2 text-left text-sm text-[rgb(232_209_158_/_0.9)] outline-none focus:border-[rgb(214_178_97_/_0.6)]"
+        >
+          {hasImages && selectedOpt?.civIcon && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={selectedOpt.civIcon} alt="" className="h-6 w-6 shrink-0 rounded object-contain" />
+          )}
+          {hasImages && selectedOpt?.leaderPortrait && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={selectedOpt.leaderPortrait} alt="" className="h-6 w-6 shrink-0 rounded object-contain" />
+          )}
+          <span className="flex-1 truncate">{selectedOpt?.label ?? "—"}</span>
+          <span className="shrink-0 text-xs text-[rgb(214_178_97_/_0.7)]">{weight} pt{weight !== 1 ? "s" : ""}</span>
+          <ChevronDown className={`h-4 w-4 shrink-0 text-[rgb(214_178_97_/_0.6)] transition-transform ${open ? "rotate-180" : ""}`} />
+        </button>
 
+        {open && (
+          <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-64 overflow-y-auto rounded-lg border border-[rgb(190_153_81_/_0.4)] bg-[rgb(8_18_32_/_0.98)] shadow-[0_8px_32px_rgb(2_7_15_/_0.7)]">
+            {options.map((opt) => {
+              const isSelected = String(opt.value) === selectedValue;
+              return (
+                <button
+                  key={String(opt.value)}
+                  type="button"
+                  onClick={() => { setSelectedValue(String(opt.value)); setOpen(false); }}
+                  className={[
+                    "flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors",
+                    isSelected
+                      ? "bg-[rgb(23_47_76_/_0.8)] text-[rgb(239_223_187_/_0.95)]"
+                      : "text-[rgb(232_209_158_/_0.85)] hover:bg-[rgb(23_47_76_/_0.5)]",
+                  ].join(" ")}
+                >
+                  {hasImages && (
+                    <div className="flex shrink-0 gap-1.5">
+                      {opt.civIcon ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={opt.civIcon} alt="" className="h-8 w-8 rounded object-contain bg-[rgb(11_25_44_/_0.6)] p-0.5" />
+                      ) : (
+                        <div className="h-8 w-8 rounded bg-[rgb(11_25_44_/_0.4)]" />
+                      )}
+                      {opt.leaderPortrait ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={opt.leaderPortrait} alt="" className="h-8 w-8 rounded object-contain bg-[rgb(11_25_44_/_0.6)] p-0.5" />
+                      ) : (
+                        <div className="h-8 w-8 rounded bg-[rgb(11_25_44_/_0.4)]" />
+                      )}
+                    </div>
+                  )}
+                  <span className="flex-1 truncate">{opt.label}</span>
+                  <span className="shrink-0 text-xs text-[rgb(214_178_97_/_0.6)]">{opt.weight} pt{opt.weight !== 1 ? "s" : ""}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Vote button */}
       <div className="flex items-center gap-3">
         <button
           type="button"
-          disabled={!canVote}
-          onClick={() => { if (selectedOpt) onVote(selectedOpt.value, weight); }}
-          aria-label={`Votar em ${selectedOpt?.label ?? ""}`}
+          disabled={!canVote && mySpentOnSelected === 0}
+          onClick={() => { if (selectedOpt && canVote) onVote(selectedOpt.value, weight); }}
+          onContextMenu={(e) => { e.preventDefault(); if (selectedOpt && mySpentOnSelected > 0) onRemoveVote(selectedOpt.value); }}
+          aria-label={`Votar em ${selectedOpt?.label ?? ""} (clique direito para remover)`}
           className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-[rgb(214_178_97_/_0.54)] bg-gradient-to-b from-[rgb(24_53_84_/_0.94)] to-[rgb(13_28_48_/_0.96)] py-2.5 text-sm font-semibold text-[rgb(237_210_148_/_0.96)] shadow-[inset_0_0_0_1px_rgb(255_220_150_/_0.07)] transition-all duration-150 hover:not-disabled:brightness-110 hover:not-disabled:-translate-y-px disabled:cursor-not-allowed disabled:opacity-40"
         >
           <ThumbsUp className="h-4 w-4 shrink-0" />
@@ -90,8 +162,6 @@ function SelectVoteField({ schema, leaders, pointsRemaining, myTurnVoteTally, on
 // ---------------------------------------------------------------------------
 // Toggle
 // ---------------------------------------------------------------------------
-
-type ToggleProps = Omit<BaseProps, "schema"> & { schema: ToggleFieldSchema };
 
 function ToggleVoteField({ schema, pointsRemaining, turnVoteTally, onVote }: ToggleProps) {
   const { weight } = schema;
@@ -141,8 +211,6 @@ function ToggleVoteField({ schema, pointsRemaining, turnVoteTally, onVote }: Tog
 // ---------------------------------------------------------------------------
 // Range
 // ---------------------------------------------------------------------------
-
-type RangeProps = Omit<BaseProps, "schema"> & { schema: RangeFieldSchema };
 
 const RANGE_WEIGHT = 1;
 
@@ -206,8 +274,6 @@ function RangeVoteField({ schema, pointsRemaining, turnVoteTally, onVote }: Rang
 // Helpers
 // ---------------------------------------------------------------------------
 
-type NormalizedOption = { value: string | number; label: string; weight: number };
-
 function buildSelectOptions(schema: SelectFieldSchema, leaders: LeaderEntry[]): NormalizedOption[] {
   if (schema.options) {
     return schema.options.map((o) => ({ value: o.value, label: o.label, weight: o.weight }));
@@ -215,7 +281,13 @@ function buildSelectOptions(schema: SelectFieldSchema, leaders: LeaderEntry[]): 
   if (schema.leadersSource) {
     return leaders
       .filter((l) => l.id >= 1)
-      .map((l) => ({ value: l.id, label: `${l.leader} (${l.civilization})`, weight: 1 }));
+      .map((l) => ({
+        value: l.id,
+        label: `${l.leader} (${l.civilization})`,
+        weight: 1,
+        civIcon: l.civIcon,
+        leaderPortrait: l.leaderPortrait,
+      }));
   }
   return [];
 }
