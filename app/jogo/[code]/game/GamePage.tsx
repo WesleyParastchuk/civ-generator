@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import usePartySocket from "partysocket/react";
 import type {
   ClientMessage,
+  ConfigFieldSchema,
   GameConfigSchema,
   ServerMessage,
   ServerPlayer,
@@ -150,9 +151,13 @@ export function GamePage({ code }: { code: string }) {
   const totalTurns = votingState?.totalTurns ?? session.config.turns;
 
   const activeScope = tabs.find((t) => t.id === activeTab)?.scope ?? "match";
-  const fields = activeTab === "match"
+  const rawEntries = activeTab === "match"
     ? Object.entries(configSchema?.matchConfig ?? {})
     : Object.entries(configSchema?.playerConfig ?? {});
+  const fields = rawEntries.filter(
+    (entry): entry is [string, ConfigFieldSchema] =>
+      typeof entry[1] === "object" && entry[1] !== null && "type" in entry[1],
+  );
 
   const myVotesThisTurn = votingState?.currentTurnVotes.filter((v) => v.voterId === myId).length ?? 0;
 
