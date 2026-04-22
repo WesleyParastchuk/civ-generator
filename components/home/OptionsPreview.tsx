@@ -1,12 +1,20 @@
 "use client";
 
-import { Minus, Plus, Star, Timer } from "lucide-react";
+import { Minus, Plus, Star, Timer, Clock } from "lucide-react";
 import { useMemo } from "react";
 
 export const MIN_TURNS = 1;
 export const MAX_TURNS = 10;
 export const MIN_POINTS = 1;
 export const MAX_POINTS = 50;
+export const DEFAULT_TURN_DURATION = 120;
+
+export const DURATION_PRESETS = [
+  { label: "1 min", seconds: 60 },
+  { label: "2 min", seconds: 120 },
+  { label: "3 min", seconds: 180 },
+  { label: "5 min", seconds: 300 },
+];
 
 const clampNumber = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, value));
@@ -21,9 +29,18 @@ type Props = {
   onTurnsChange: (v: number) => void;
   pointsPerTurn: number;
   onPointsPerTurnChange: (v: number) => void;
+  turnDurationSeconds: number;
+  onTurnDurationSecondsChange: (v: number) => void;
 };
 
-export function OptionsPreview({ turns, onTurnsChange, pointsPerTurn, onPointsPerTurnChange }: Props) {
+export function OptionsPreview({
+  turns,
+  onTurnsChange,
+  pointsPerTurn,
+  onPointsPerTurnChange,
+  turnDurationSeconds,
+  onTurnDurationSecondsChange,
+}: Props) {
   const totalPoints = useMemo(() => turns * pointsPerTurn, [turns, pointsPerTurn]);
   const turnsLabel = turns === 1 ? "turno" : "turnos";
   const pointsLabel = pointsPerTurn === 1 ? "ponto" : "pontos";
@@ -123,6 +140,32 @@ export function OptionsPreview({ turns, onTurnsChange, pointsPerTurn, onPointsPe
           <p className="mt-2 text-sm text-[rgb(206_189_156_/_0.8)]">
             Mínimo 1 e máximo 50 pontos.
           </p>
+        </article>
+
+        <article className="game-card col-span-full rounded-xl border border-[rgb(190_153_81_/_0.35)] bg-[rgb(11_25_44_/_0.72)] p-4 shadow-[inset_0_0_0_1px_rgb(255_220_150_/_0.06)]">
+          <div className="mb-3 inline-flex rounded-lg border border-[rgb(207_168_93_/_0.5)] bg-[rgb(23_47_76_/_0.9)] p-2 text-[rgb(233_205_141_/_0.95)]">
+            <Clock className="h-4 w-4" />
+          </div>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[rgb(214_180_104_/_0.88)]">
+            Tempo por turno
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {DURATION_PRESETS.map((p) => (
+              <button
+                key={p.seconds}
+                type="button"
+                onClick={() => onTurnDurationSecondsChange(p.seconds)}
+                className={[
+                  "rounded-lg border px-4 py-2 text-sm font-semibold transition-colors",
+                  turnDurationSeconds === p.seconds
+                    ? "border-[rgb(214_178_97_/_0.7)] bg-[rgb(23_47_76_/_0.9)] text-[rgb(239_223_187_/_0.95)]"
+                    : "border-[rgb(190_153_81_/_0.25)] bg-transparent text-[rgb(206_189_156_/_0.6)] hover:text-[rgb(206_189_156_/_0.9)]",
+                ].join(" ")}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
         </article>
       </div>
 

@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Compass, Crown, UsersRound } from "lucide-react";
-import { OptionsPreview } from "./OptionsPreview";
+import { OptionsPreview, DEFAULT_TURN_DURATION } from "./OptionsPreview";
 import { StartButton } from "./StartButton";
 import { generateRoomCode } from "@/lib/generateRoomCode";
 import { saveLobbySession } from "@/lib/sessionLobby";
@@ -12,6 +12,7 @@ export default function HeroPanel() {
   const router = useRouter();
   const [turns, setTurns] = useState(3);
   const [pointsPerTurn, setPointsPerTurn] = useState(10);
+  const [turnDurationSeconds, setTurnDurationSeconds] = useState(DEFAULT_TURN_DURATION);
 
   const handleStartSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -20,7 +21,7 @@ export default function HeroPanel() {
     if (!nickname) return;
 
     const code = generateRoomCode();
-    saveLobbySession(code, { nickname, isHost: true, config: { turns, pointsPerTurn } });
+    saveLobbySession(code, { nickname, isHost: true, config: { turns, pointsPerTurn, turnDurationSeconds } });
     router.push(`/jogo/${code}`);
   };
 
@@ -71,6 +72,8 @@ export default function HeroPanel() {
           onTurnsChange={setTurns}
           pointsPerTurn={pointsPerTurn}
           onPointsPerTurnChange={setPointsPerTurn}
+          turnDurationSeconds={turnDurationSeconds}
+          onTurnDurationSecondsChange={setTurnDurationSeconds}
         />
       </div>
     </section>
