@@ -24,13 +24,6 @@ type GameSession = {
   nickname: string;
 };
 
-function readGameSession(code: string): GameSession | null {
-  if (typeof window === "undefined") return null;
-  const raw = sessionStorage.getItem(`game-${code}`);
-  if (!raw) return null;
-  return JSON.parse(raw) as GameSession;
-}
-
 type Tab = { id: string; label: string; scope: VoteScope };
 
 function buildTurnTally(
@@ -50,7 +43,8 @@ function buildTurnTally(
 }
 
 export function GamePage({ code }: { code: string }) {
-  const session = readGameSession(code);
+  const [session, setSession] = useState<GameSession | null>(null);
+  const [sessionReady, setSessionReady] = useState(false);
 
   const [myId, setMyId] = useState<string | null>(null);
   const [players, setPlayers] = useState<ServerPlayer[]>([]);
@@ -60,6 +54,13 @@ export function GamePage({ code }: { code: string }) {
   const [activeTab, setActiveTab] = useState<string>("match");
 
   const joinSentRef = useRef(false);
+
+  // Read sessionStorage client-side only (avoids SSR hydration mismatch)
+  useEffect(() => {
+    const raw = sessionStorage.getItem(`game-${code}`);
+    setSession(raw ? (JSON.parse(raw) as GameSession) : null); // eslint-disable-line react-hooks/set-state-in-effect
+    setSessionReady(true);
+  }, [code]);
 
   // Fetch config.json + leaders.json
   useEffect(() => {
@@ -109,6 +110,8 @@ export function GamePage({ code }: { code: string }) {
   const handleResolveTie = (pending: TieBreakPending, value: string | number | boolean) => {
     sendMsg({ type: "resolve_tie", payload: { scope: pending.scope, field: pending.field, value } });
   };
+
+  if (!sessionReady) return null;
 
   if (!session) {
     return (
