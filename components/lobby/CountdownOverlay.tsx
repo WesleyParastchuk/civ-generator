@@ -10,7 +10,7 @@ export function CountdownOverlay({ seconds }: Props) {
         {seconds}
       </p>
       <p className="mt-4 font-[var(--font-cinzel)] text-lg uppercase tracking-widest text-[rgb(206_189_156_/_0.7)]">
-        Preparando para o combate...
+        Preparando para a votação...
       </p>
     </div>
   );

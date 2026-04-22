@@ -30,6 +30,15 @@ function LobbyConnected({ code, playerInfo }: ConnectedProps) {
   const joinSentRef = useRef(false);
   const router = useRouter();
 
+  useEffect(() => {
+    if (countdown === 5) {
+      sessionStorage.setItem(
+        `game-${code}`,
+        JSON.stringify({ config, isHost: playerInfo.isHost }),
+      );
+    }
+  }, [countdown]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const socket = usePartySocket({
     host: process.env.NEXT_PUBLIC_PARTYKIT_HOST!,
     room: code,
