@@ -65,26 +65,22 @@ function SelectVoteField({ schema, leaders, pointsRemaining, myTurnVoteTally, on
         ))}
       </select>
 
-      <div className="flex items-center justify-between gap-2">
-        {mySpentOnSelected > 0 ? (
-          <span className="text-xs text-[rgb(214_178_97_/_0.8)]">
-            Seus votos: <span className="font-bold">{mySpentOnSelected} pts</span>
-          </span>
-        ) : (
-          <span className="text-xs text-[rgb(206_189_156_/_0.35)]">Nenhum voto seu aqui</span>
-        )}
+      <button
+        type="button"
+        disabled={!canVote}
+        onClick={() => { if (selectedOpt) onVote(selectedOpt.value, weight); }}
+        className="game-control-button flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold disabled:opacity-40"
+        aria-label={`Votar em ${selectedOpt?.label ?? ""}`}
+      >
+        <ThumbsUp className="h-4 w-4 shrink-0" />
+        Votar · {weight} pt{weight !== 1 ? "s" : ""}
+      </button>
 
-        <button
-          type="button"
-          disabled={!canVote}
-          onClick={() => { if (selectedOpt) onVote(selectedOpt.value, weight); }}
-          className="game-control-button inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-40"
-          aria-label={`Votar em ${selectedOpt?.label ?? ""}`}
-        >
-          <ThumbsUp className="h-4 w-4 shrink-0" />
-          Votar · {weight} pt{weight !== 1 ? "s" : ""}
-        </button>
-      </div>
+      {mySpentOnSelected > 0 && (
+        <span className="text-xs text-[rgb(214_178_97_/_0.8)]">
+          Seus votos: <span className="font-bold">{mySpentOnSelected} pts</span>
+        </span>
+      )}
     </div>
   );
 }
