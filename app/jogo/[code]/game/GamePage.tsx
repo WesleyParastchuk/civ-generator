@@ -71,6 +71,7 @@ export function GamePage({ code }: { code: string }) {
   const [configSchema, setConfigSchema] = useState<GameConfigSchema | null>(null);
   const [leaders, setLeaders] = useState<LeaderEntry[]>([]);
   const [activeTab, setActiveTab] = useState<string>("match");
+  const [iReadyToEnd, setIReadyToEnd] = useState(false);
 
   const joinSentRef = useRef(false);
 
@@ -112,7 +113,10 @@ export function GamePage({ code }: { code: string }) {
       } else if (msg.type === "room_update") {
         setPlayers(msg.payload.players);
       } else if (msg.type === "voting_state") {
-        setVotingState(msg.payload);
+        setVotingState((prev) => {
+          if (prev && prev.currentTurn !== msg.payload.currentTurn) setIReadyToEnd(false);
+          return msg.payload;
+        });
       }
     },
   });
@@ -127,7 +131,7 @@ export function GamePage({ code }: { code: string }) {
     sendMsg({ type: "remove_vote", payload: { scope, field, value } });
   };
 
-  const handleEndTurn = () => sendMsg({ type: "end_turn" });
+  const handleEndTurn = () => { setIReadyToEnd(true); sendMsg({ type: "end_turn" }); };
   const handleConfirmNextTurn = () => sendMsg({ type: "confirm_next_turn" });
 
   const handleResolveTie = (pending: TieBreakPending, value: string | number | boolean) => {
@@ -234,7 +238,7 @@ export function GamePage({ code }: { code: string }) {
         </div>
 
         {/* Scrollable fields */}
-        <div className="flex-1 overflow-y-auto px-5 py-4 sm:px-8">
+        <div className="flex-1 overflow-y-auto px-5 py-4 sm:px-8 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[rgb(190_153_81_/_0.25)] hover:[&::-webkit-scrollbar-thumb]:bg-[rgb(190_153_81_/_0.45)]">
           <div className="space-y-4">
             {configSchema && fields.map(([key, schema]) => (
               <div key={key}>
@@ -272,15 +276,21 @@ export function GamePage({ code }: { code: string }) {
             votesThisTurn={myVotesThisTurn}
           />
 
-          {/* Host end-turn button */}
-          {session.isHost && votingState?.phase === "playing" && (
+          {/* End-turn button — all players must confirm */}
+          {votingState?.phase === "playing" && (
             <div className="mt-4 flex justify-end">
               <button
                 type="button"
                 onClick={handleEndTurn}
-                className="game-control-button h-auto rounded-xl px-5 py-2.5 text-sm font-semibold"
+                disabled={iReadyToEnd}
+                className="inline-flex items-center gap-2 rounded-xl border border-[rgb(190_153_81_/_0.45)] bg-[rgb(23_47_76_/_0.7)] px-5 py-2.5 text-sm font-semibold text-[rgb(237_210_148_/_0.9)] transition-all duration-150 hover:not-disabled:brightness-110 hover:not-disabled:-translate-y-px disabled:cursor-default disabled:opacity-60"
               >
                 Finalizar turno {currentTurn}
+                {votingState.totalPlayers > 1 && (
+                  <span className="rounded-full border border-[rgb(190_153_81_/_0.4)] bg-[rgb(11_25_44_/_0.6)] px-2 py-0.5 text-xs tabular-nums text-[rgb(214_178_97_/_0.8)]">
+                    {votingState.readyToEndCount}/{votingState.totalPlayers}
+                  </span>
+                )}
               </button>
             </div>
           )}

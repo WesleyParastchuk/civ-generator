@@ -47,6 +47,9 @@ export default class LobbyServer implements Party.Server {
   // Final resolved config
   finalConfig: FinalConfig | null = null;
 
+  // Players who clicked "Finalizar turno" this turn
+  readyToEndTurn: Set<string> = new Set();
+
   // Countdown timers
   turnDeadline: number = 0; // UTC ms when current turn ends
   turnTimer: ReturnType<typeof setTimeout> | null = null;
@@ -95,6 +98,7 @@ export default class LobbyServer implements Party.Server {
           this.accumulator = {};
           this.pendingTieBreaks = [];
           this.finalConfig = null;
+          this.readyToEndTurn = new Set();
 
           const startMsg: ServerMessage = {
             type: "game_starting",
@@ -179,6 +183,7 @@ export default class LobbyServer implements Party.Server {
     this.currentLedger = { turn: this.currentTurn, votes: [], spendByVoter: initialSpend };
     this.gamePhase = "playing";
     this.betweenTurnsDeadline = 0;
+    this.readyToEndTurn = new Set();
     this.startTurnTimer();
     this.broadcastVotingState();
   }
@@ -248,10 +253,14 @@ export default class LobbyServer implements Party.Server {
   }
 
   handleEndTurn(sender: Party.Connection) {
-    const player = this.players.get(sender.id);
-    if (!player?.isHost) return;
+    if (!this.players.has(sender.id)) return;
     if (this.gamePhase !== "playing") return;
-    this.endTurn();
+    this.readyToEndTurn.add(sender.id);
+    if (this.readyToEndTurn.size >= this.players.size) {
+      this.endTurn();
+    } else {
+      this.broadcastVotingState();
+    }
   }
 
   handleConfirmNextTurn(sender: Party.Connection) {
@@ -408,6 +417,8 @@ export default class LobbyServer implements Party.Server {
       betweenTurnsDeadline: this.gamePhase === "between_turns" ? this.betweenTurnsDeadline : 0,
       spendByVoter: ledger?.spendByVoter ?? {},
       currentTurnVotes: ledger?.votes ?? [],
+      readyToEndCount: this.readyToEndTurn.size,
+      totalPlayers: this.players.size,
       ...(this.pendingTieBreaks.length > 0 ? { pendingTieBreaks: this.pendingTieBreaks } : {}),
       ...(this.finalConfig && this.pendingTieBreaks.length === 0 ? { finalConfig: this.finalConfig } : {}),
     };

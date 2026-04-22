@@ -129,6 +129,8 @@ export type VotingState = {
   betweenTurnsDeadline: number;
   spendByVoter: Record<string, number>;
   currentTurnVotes: VoteCast[];
+  readyToEndCount: number;   // players who clicked "Finalizar turno"
+  totalPlayers: number;
   pendingTieBreaks?: TieBreakPending[];
   finalConfig?: FinalConfig;
 };
