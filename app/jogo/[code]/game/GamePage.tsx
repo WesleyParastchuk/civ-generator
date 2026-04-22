@@ -13,6 +13,7 @@ import type {
   VoteScope,
   VotingState,
 } from "@/lib/lobbyTypes";
+import { Globe, User } from "lucide-react";
 import { TurnHeader } from "@/components/game/TurnHeader";
 import { TurnFooter } from "@/components/game/TurnFooter";
 import { BetweenTurnsOverlay } from "@/components/game/BetweenTurnsOverlay";
@@ -41,6 +42,19 @@ function buildTurnTally(
     }
   }
   return result;
+}
+
+function playerVotedField(
+  votes: VoteCast[],
+  voterId: string,
+  scope: VoteScope,
+  field: string,
+): boolean {
+  const scopeId = scope === "match" ? "match" : scope.playerId;
+  return votes.some((v) => {
+    const vScopeId = v.scope === "match" ? "match" : v.scope.playerId;
+    return v.voterId === voterId && v.field === field && vScopeId === scopeId;
+  });
 }
 
 export function GamePage({ code }: { code: string }) {
@@ -194,12 +208,15 @@ export function GamePage({ code }: { code: string }) {
               type="button"
               onClick={() => setActiveTab(tab.id)}
               className={[
-                "rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors",
+                "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors",
                 activeTab === tab.id
                   ? "border-[rgb(214_178_97_/_0.6)] bg-[rgb(23_47_76_/_0.9)] text-[rgb(239_223_187_/_0.95)]"
                   : "border-[rgb(190_153_81_/_0.25)] bg-transparent text-[rgb(206_189_156_/_0.6)] hover:text-[rgb(206_189_156_/_0.9)]",
               ].join(" ")}
             >
+              {tab.id === "match"
+                ? <Globe className="h-3 w-3 shrink-0" />
+                : <User className="h-3 w-3 shrink-0" />}
               {tab.label}
             </button>
           ))}
@@ -223,6 +240,7 @@ export function GamePage({ code }: { code: string }) {
                 leaders={leaders}
                 pointsRemaining={pointsRemaining}
                 turnVoteTally={buildTurnTally(votingState?.currentTurnVotes ?? [], activeScope, key)}
+                myVotedThisField={myId ? playerVotedField(votingState?.currentTurnVotes ?? [], myId, activeScope, key) : false}
                 onVote={(value, weight) => handleVote(activeScope, key, value, weight)}
               />
             </div>
