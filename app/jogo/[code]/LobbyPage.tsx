@@ -34,7 +34,7 @@ function LobbyConnected({ code, playerInfo }: ConnectedProps) {
     if (countdown === 5) {
       sessionStorage.setItem(
         `game-${code}`,
-        JSON.stringify({ config, isHost: playerInfo.isHost }),
+        JSON.stringify({ config, isHost: playerInfo.isHost, nickname: playerInfo.nickname }),
       );
     }
   }, [countdown]); // eslint-disable-line react-hooks/exhaustive-deps

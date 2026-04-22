@@ -57,11 +57,15 @@ export default class LobbyServer implements Party.Server {
 
     if (msg.type === "join") {
       const { nickname, isHost, config } = msg.payload;
-      if (isHost && config) this.config = config;
+      if (isHost && config && this.gamePhase === "lobby") this.config = config;
       this.players.set(sender.id, { nickname, ready: false, isHost });
       const welcome: ServerMessage = { type: "welcome", payload: { connectionId: sender.id } };
       sender.send(JSON.stringify(welcome));
       this.broadcast();
+      if (this.gamePhase !== "lobby") {
+        const stateMsg = this.buildVotingStateMsg();
+        if (stateMsg) sender.send(JSON.stringify(stateMsg));
+      }
 
     } else if (msg.type === "update_config") {
       const player = this.players.get(sender.id);
@@ -349,10 +353,9 @@ export default class LobbyServer implements Party.Server {
     this.broadcastVotingState();
   }
 
-  broadcastVotingState() {
-    if (this.gamePhase === "lobby" || !this.config) return;
+  buildVotingStateMsg(): ServerMessage | null {
+    if (this.gamePhase === "lobby" || !this.config) return null;
     const ledger = this.currentLedger;
-
     const state: VotingState = {
       phase: this.gamePhase as VotingState["phase"],
       currentTurn: this.currentTurn,
@@ -363,9 +366,12 @@ export default class LobbyServer implements Party.Server {
       ...(this.pendingTieBreaks.length > 0 ? { pendingTieBreaks: this.pendingTieBreaks } : {}),
       ...(this.finalConfig && this.pendingTieBreaks.length === 0 ? { finalConfig: this.finalConfig } : {}),
     };
+    return { type: "voting_state", payload: state };
+  }
 
-    const msg: ServerMessage = { type: "voting_state", payload: state };
-    this.room.broadcast(JSON.stringify(msg));
+  broadcastVotingState() {
+    const msg = this.buildVotingStateMsg();
+    if (msg) this.room.broadcast(JSON.stringify(msg));
   }
 
   onClose(conn: Party.Connection) {
