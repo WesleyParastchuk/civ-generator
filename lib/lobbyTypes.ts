@@ -139,4 +139,6 @@ export type VotingState = {
 export type FinalConfig = {
   match: Record<string, string | number | boolean | null>;
   players: Record<string, Record<string, string | number | boolean | null>>;  // playerId → field → value
+  // Second-most-voted civilization per player (used when first choice is banned)
+  runnerUpCivilization?: Record<string, string | number | boolean | null>;    // playerId → civId
 };
