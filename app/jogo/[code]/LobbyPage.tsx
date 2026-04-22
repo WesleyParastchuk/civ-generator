@@ -2,11 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import usePartySocket from "partysocket/react";
 import type { ClientMessage, RoomConfig, ServerMessage, ServerPlayer } from "@/lib/lobbyTypes";
 import { getLobbySession, clearLobbySession } from "@/lib/sessionLobby";
 import { NicknameGate } from "@/components/lobby/NicknameGate";
 import { LobbyPanel } from "@/components/lobby/LobbyPanel";
+import { CountdownOverlay } from "@/components/lobby/CountdownOverlay";
 
 type PlayerInfo = {
   nickname: string;
@@ -24,7 +26,9 @@ function LobbyConnected({ code, playerInfo }: ConnectedProps) {
   const [config, setConfig] = useState<RoomConfig | null>(playerInfo.config);
   const [myId, setMyId] = useState<string | null>(null);
   const [expired, setExpired] = useState(false);
+  const [countdown, setCountdown] = useState<number | null>(null);
   const joinSentRef = useRef(false);
+  const router = useRouter();
 
   const socket = usePartySocket({
     host: process.env.NEXT_PUBLIC_PARTYKIT_HOST!,
@@ -51,6 +55,18 @@ function LobbyConnected({ code, playerInfo }: ConnectedProps) {
         if (msg.payload.config) setConfig(msg.payload.config);
       } else if (msg.type === "room_expired") {
         setExpired(true);
+      } else if (msg.type === "game_starting") {
+        const deadline = performance.now() + msg.payload.remainingMs;
+        setCountdown(5);
+        const id = setInterval(() => {
+          const remaining = Math.ceil((deadline - performance.now()) / 1000);
+          if (remaining <= 0) {
+            clearInterval(id);
+            router.push(`/jogo/${code}/game`);
+          } else {
+            setCountdown(remaining);
+          }
+        }, 100);
       }
     },
   });
@@ -59,6 +75,10 @@ function LobbyConnected({ code, playerInfo }: ConnectedProps) {
     const msg: ClientMessage = { type: "toggle_ready" };
     socket.send(JSON.stringify(msg));
   };
+
+  if (countdown !== null) {
+    return <CountdownOverlay seconds={countdown} />;
+  }
 
   if (expired) {
     return (
