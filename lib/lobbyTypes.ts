@@ -16,8 +16,10 @@ export type ClientMessage =
   | { type: "join"; payload: { nickname: string; isHost: boolean; config?: RoomConfig } }
   | { type: "toggle_ready" }
   | { type: "update_config"; payload: { config: RoomConfig } }
-  | { type: "cast_vote"; payload: { scope: VoteScope; field: string; value: string | number | boolean } }
+  | { type: "cast_vote"; payload: { scope: VoteScope; field: string; value: string | number | boolean; weight: number } }
   | { type: "resolve_tie"; payload: { scope: VoteScope; field: string; value: string | number | boolean } }
+  | { type: "end_turn" }
+  | { type: "confirm_next_turn" }
   | { type: "ping" };
 
 // Mensagens servidor → cliente
