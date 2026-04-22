@@ -322,7 +322,14 @@ export default class LobbyServer implements Party.Server {
       }
     }
 
-    this.finalConfig = { match: matchResult, players: playersResult };
+    // Compute runner-up civilization per player
+    const runnerUpCivilization: Record<string, string | number | boolean | null> = {};
+    for (const playerId of connectedPlayerIds) {
+      const second = this.resolveRunnerUp({ playerId }, "civilization");
+      if (second !== null) runnerUpCivilization[playerId] = second;
+    }
+
+    this.finalConfig = { match: matchResult, players: playersResult, runnerUpCivilization };
     this.pendingTieBreaks = newPendingTieBreaks;
 
     if (newPendingTieBreaks.length > 0) {
@@ -371,6 +378,17 @@ export default class LobbyServer implements Party.Server {
     }
 
     return { winner: null, tied: true, tiedValues: winners.map(coerceValue), maxWeight };
+  }
+
+  resolveRunnerUp(scope: VoteScope, field: string): string | number | boolean | null {
+    const prefix = `${scopeKey(scope)}|${field}|`;
+    const candidates: Array<[string, number]> = [];
+    for (const [key, weight] of Object.entries(this.accumulator)) {
+      if (key.startsWith(prefix)) candidates.push([key.slice(prefix.length), weight]);
+    }
+    candidates.sort((a, b) => b[1] - a[1]);
+    if (candidates.length < 2) return null;
+    return coerceValue(candidates[1][0]);
   }
 
   handleResolveTie(

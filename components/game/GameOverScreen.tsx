@@ -139,6 +139,10 @@ function FinalConfigDisplay({
       {players.map((player) => {
         const playerResult = finalConfig.players[player.id];
         if (!playerResult || Object.keys(playerResult).length === 0) return null;
+        const bannedCiv = finalConfig.match.bannedCivilizations;
+        const playerCiv = playerResult.civilization;
+        const civBanned = bannedCiv != null && playerCiv != null && String(playerCiv) === String(bannedCiv);
+        const runnerUp = civBanned ? (finalConfig.runnerUpCivilization?.[player.id] ?? null) : null;
         return (
           <section key={player.id}>
             <h2 className="mb-3 font-[var(--font-cinzel)] text-lg tracking-wide text-[rgb(239_223_187_/_0.9)]">
@@ -147,12 +151,23 @@ function FinalConfigDisplay({
             <div className="space-y-1.5">
               {Object.entries(playerResult).map(([field, value]) => {
                 const schema = configSchema?.playerConfig[field];
+                const isCivField = field === "civilization";
+                const banned = isCivField && civBanned;
                 return (
-                  <ResultRow
-                    key={field}
-                    label={schema?.label ?? field}
-                    value={resolveValueLabel(value, field, { playerId: player.id }, configSchema, leaders)}
-                  />
+                  <div key={field}>
+                    <ResultRow
+                      label={schema?.label ?? field}
+                      value={resolveValueLabel(value, field, { playerId: player.id }, configSchema, leaders)}
+                      banned={banned}
+                    />
+                    {banned && runnerUp !== null && (
+                      <ResultRow
+                        label="2ª opção"
+                        value={resolveValueLabel(runnerUp, "civilization", { playerId: player.id }, configSchema, leaders)}
+                        highlight
+                      />
+                    )}
+                  </div>
                 );
               })}
             </div>
@@ -163,13 +178,23 @@ function FinalConfigDisplay({
   );
 }
 
-function ResultRow({ label, value }: { label: string; value: string }) {
+function ResultRow({ label, value, banned, highlight }: { label: string; value: string; banned?: boolean; highlight?: boolean }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-[rgb(190_153_81_/_0.2)] bg-[rgb(10_20_34_/_0.6)] px-3 py-2">
+    <div className={[
+      "flex items-center justify-between gap-3 rounded-lg border px-3 py-2",
+      banned
+        ? "border-[rgb(220_80_80_/_0.35)] bg-[rgb(40_10_10_/_0.6)]"
+        : highlight
+          ? "border-[rgb(190_153_81_/_0.4)] bg-[rgb(20_40_20_/_0.6)]"
+          : "border-[rgb(190_153_81_/_0.2)] bg-[rgb(10_20_34_/_0.6)]",
+    ].join(" ")}>
       <span className="text-xs font-semibold uppercase tracking-[0.1em] text-[rgb(214_178_97_/_0.75)]">
         {label}
+        {banned && <span className="ml-1.5 text-[rgb(220_80_80_/_0.8)]">· banida</span>}
       </span>
-      <span className="text-sm text-[rgb(232_209_158_/_0.9)]">{value}</span>
+      <span className={["text-sm", banned ? "text-[rgb(220_150_150_/_0.7)] line-through" : "text-[rgb(232_209_158_/_0.9)]"].join(" ")}>
+        {value}
+      </span>
     </div>
   );
 }
