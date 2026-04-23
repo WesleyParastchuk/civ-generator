@@ -13,7 +13,7 @@ import type {
   VoteScope,
   VotingState,
 } from "@/lib/lobbyTypes";
-import { Globe, User } from "lucide-react";
+import { Flag, Globe, User } from "lucide-react";
 import { TurnHeader } from "@/components/game/TurnHeader";
 import { BetweenTurnsOverlay } from "@/components/game/BetweenTurnsOverlay";
 import { VotingField, type LeaderEntry } from "@/components/game/VotingField";
@@ -193,6 +193,13 @@ export function GamePage({ code }: { code: string }) {
           nextTurn={currentTurn + 1}
           totalTurns={totalTurns}
           betweenDeadline={votingState.betweenTurnsDeadline}
+          votes={votingState.currentTurnVotes}
+          spendByVoter={votingState.spendByVoter}
+          myId={myId ?? ""}
+          players={players}
+          configSchema={configSchema}
+          leaders={leaders}
+          pointsPerTurn={pointsPerTurn}
         />
       )}
 
@@ -278,6 +285,7 @@ export function GamePage({ code }: { code: string }) {
                 disabled={iReadyToEnd}
                 className="inline-flex items-center gap-2 rounded-xl border border-[rgb(190_153_81_/_0.45)] bg-[rgb(23_47_76_/_0.7)] px-5 py-2.5 text-sm font-semibold text-[rgb(237_210_148_/_0.9)] transition-all duration-150 hover:not-disabled:brightness-110 hover:not-disabled:-translate-y-px disabled:cursor-default disabled:opacity-60"
               >
+                <Flag className="h-4 w-4 shrink-0" />
                 Finalizar turno {currentTurn}
                 {votingState.totalPlayers > 1 && (
                   <span className="rounded-full border border-[rgb(190_153_81_/_0.4)] bg-[rgb(11_25_44_/_0.6)] px-2 py-0.5 text-xs tabular-nums text-[rgb(214_178_97_/_0.8)]">
