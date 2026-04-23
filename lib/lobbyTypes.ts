@@ -53,6 +53,7 @@ export type SelectFieldSchema = {
   default: string | number | null;
   options?: SelectOption[];          // absent when leadersSource is used
   leadersSource?: string;            // "leaders.json" — options built from leaders data
+  excludeLeaderIds?: number[];       // leader IDs to omit from the dropdown
   description?: string;
 };
 

@@ -211,15 +211,27 @@ function ToggleVoteField({ schema, pointsRemaining, turnVoteTally, onVote }: Tog
 }
 
 // ---------------------------------------------------------------------------
-// Range
+// Range — Fibonacci-priced direct voting
 // ---------------------------------------------------------------------------
 
-const RANGE_WEIGHT = 1;
+// Costs per step away from default: 1, 2, 3, 5, 8, 13...
+function fibStepCost(step: number): number {
+  if (step <= 1) return 1;
+  if (step === 2) return 2;
+  let a = 1, b = 2;
+  for (let i = 3; i <= step; i++) [a, b] = [b, a + b];
+  return b;
+}
 
-function RangeVoteField({ schema, pointsRemaining, turnVoteTally, onVote }: RangeProps) {
-  const { min, max, unit } = schema;
-  const [selected, setSelected] = useState<number>(schema.default);
-  const canVote = pointsRemaining >= RANGE_WEIGHT;
+
+function RangeVoteField({ schema, pointsRemaining, turnVoteTally, myTurnVoteTally, onVote, onRemoveVote }: RangeProps) {
+  const { min, max, unit, default: defaultVal } = schema;
+  const [selected, setSelected] = useState<number>(defaultVal);
+
+  const dist = Math.abs(selected - defaultVal);
+  const weight = fibStepCost(dist === 0 ? 1 : dist);
+  const canVote = pointsRemaining >= weight;
+  const mySpentOnSelected = myTurnVoteTally[String(selected)] ?? 0;
   const tally = turnVoteTally[String(selected)] ?? 0;
 
   return (
@@ -252,19 +264,25 @@ function RangeVoteField({ schema, pointsRemaining, turnVoteTally, onVote }: Rang
         </button>
       </div>
       <div className="mt-3 flex items-center justify-between gap-2">
-        <span className="text-xs text-[rgb(206_189_156_/_0.5)]">min {min} — max {max}</span>
+        <span className="text-xs text-[rgb(206_189_156_/_0.5)]">padrão {defaultVal} · min {min} — max {max}</span>
         <div className="flex items-center gap-2">
+          {mySpentOnSelected > 0 && (
+            <span className="text-xs text-[rgb(214_178_97_/_0.8)]">
+              Seus: <span className="font-bold">{mySpentOnSelected} pts</span>
+            </span>
+          )}
           <span className="rounded border border-[rgb(190_153_81_/_0.35)] bg-[rgb(23_47_76_/_0.7)] px-2 py-0.5 text-xs font-semibold text-[rgb(214_178_97_/_0.85)]">
-            {RANGE_WEIGHT} pt
+            {weight} pt{weight !== 1 ? "s" : ""}
           </span>
           <button
             type="button"
-            disabled={!canVote}
-            onClick={() => onVote(selected, RANGE_WEIGHT)}
+            disabled={!canVote && mySpentOnSelected === 0}
+            onClick={() => { if (canVote) onVote(selected, weight); }}
+            onContextMenu={(e) => { e.preventDefault(); if (mySpentOnSelected > 0) onRemoveVote(selected); }}
             className="game-control-button h-7 w-7 text-xs"
             aria-label="Votar neste valor"
           >
-            +
+            <ThumbsUp className="h-3.5 w-3.5" />
           </button>
         </div>
       </div>
@@ -285,8 +303,9 @@ function buildSelectOptions(schema: SelectFieldSchema, leaders: LeaderEntry[]): 
     return opts;
   }
   if (schema.leadersSource) {
+    const excluded = new Set(schema.excludeLeaderIds ?? []);
     return leaders
-      .filter((l) => l.id >= 1)
+      .filter((l) => l.id >= 1 && !excluded.has(l.id))
       .map((l) => ({
         value: l.id,
         label: `${l.leader} (${l.civilization})`,
