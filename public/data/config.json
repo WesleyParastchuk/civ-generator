@@ -16,12 +16,12 @@
       "description": "Quanto maior a dificuldade, mais cara",
       "default": "prince",
       "options": [
-        { "value": "settler", "label": "Colono", "weight": 1 },
-        { "value": "chieftain", "label": "Chefe", "weight": 1 },
+        { "value": "settler", "label": "Colono", "weight": 4 },
+        { "value": "chieftain", "label": "Chefe", "weight": 3 },
         { "value": "warlord", "label": "Senhor da guerra", "weight": 2 },
-        { "value": "prince", "label": "Príncipe", "weight": 2 },
-        { "value": "king", "label": "Rei", "weight": 3 },
-        { "value": "emperor", "label": "Imperador", "weight": 3 },
+        { "value": "prince", "label": "Príncipe", "weight": 1 },
+        { "value": "king", "label": "Rei", "weight": 1 },
+        { "value": "emperor", "label": "Imperador", "weight": 2 },
         { "value": "immortal", "label": "Imortal", "weight": 4 },
         { "value": "deity", "label": "Divindade", "weight": 5 }
       ]
@@ -30,10 +30,10 @@
       "label": "Turnos parado",
       "type": "range",
       "min": 0,
-      "max": 10,
+      "max": 4,
       "default": 0,
       "unit": "turnos",
-      "description": "Quantidade de turnos que um jogador pode ficar inativo"
+      "description": "Quantidade de turnos que um jogador deve ficar inativo"
     },
     "maxCities": {
       "label": "Máximo de cidades",
@@ -41,7 +41,7 @@
       "default": "unlimited",
       "options": [
         { "value": "unlimited", "label": "Sem limite", "weight": 1, "default": true },
-        { "value": "same_as_others", "label": "Mesma quantidade dos outros jogadores", "weight": 1 }
+        { "value": "same_as_others", "label": "Mesma quantidade dos outros jogadores", "weight": 2 }
       ]
     }
   },
@@ -112,7 +112,7 @@
         { "value": "hot", "label": "Quente", "weight": 1 },
         { "value": "standard", "label": "Padrão", "weight": 1, "default": true },
         { "value": "cold", "label": "Frio", "weight": 1 },
-        { "value": "random", "label": "Aleatório", "weight": 1 }
+        { "value": "random", "label": "Aleatório", "weight": 2 }
       ]
     },
     "precipitation": {
@@ -123,7 +123,7 @@
         { "value": "arid", "label": "Árido", "weight": 1 },
         { "value": "standard", "label": "Padrão", "weight": 1, "default": true },
         { "value": "humid", "label": "Úmido", "weight": 1 },
-        { "value": "random", "label": "Aleatório", "weight": 1 }
+        { "value": "random", "label": "Aleatório", "weight": 2 }
       ]
     },
     "seaLevel": {
@@ -134,7 +134,7 @@
         { "value": "low", "label": "Baixo", "weight": 1 },
         { "value": "standard", "label": "Padrão", "weight": 1, "default": true },
         { "value": "high", "label": "Alto", "weight": 2 },
-        { "value": "random", "label": "Aleatório", "weight": 1 }
+        { "value": "random", "label": "Aleatório", "weight": 2 }
       ]
     },
     "disabledVictoryConditions": {
@@ -182,6 +182,7 @@
       "description": "Votação para banir um líder (convertido de multiselect)",
       "default": null,
       "leadersSource": "leaders.json",
+      "excludeLeaderIds": [1],
       "note": "Use os IDs (1-22) dos líderes de leaders.json para nomear as opções"
     }
   }
