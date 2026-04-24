@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { ChevronDown, Crown, Globe, User } from "lucide-react";
 import { CountdownShell, CountdownNumber } from "@/components/game/CountdownDisplay";
 import { playReveal, playFanfare } from "@/lib/sounds";
 import type {
@@ -8,6 +9,8 @@ import type {
   FinalConfig,
   GameConfigSchema,
   TieBreakPending,
+  VoteBreakdownEntry,
+  VoteScope,
   VotingState,
 } from "@/lib/lobbyTypes";
 import type { LeaderEntry } from "./VotingField";
@@ -123,9 +126,15 @@ export function GameOverScreen({ votingState, configSchema, leaders, players, is
       className="imperial-border mx-auto w-full max-w-3xl rounded-3xl border border-[rgb(212_171_86_/_0.4)] bg-[rgb(11_26_46_/_0.84)] p-5 shadow-[0_24px_60px_rgb(2_7_15_/_0.58)] backdrop-blur sm:p-8"
       style={{ animation: "final-rise 600ms ease-out both" }}
     >
-      <h1 className="font-[var(--font-cinzel)] text-2xl font-bold tracking-wide text-[rgb(214_178_97_/_0.95)]">
-        Resultado Final
-      </h1>
+      <div className="flex flex-col items-center text-center">
+        <span className="mb-2 font-[var(--font-cinzel)] text-[10px] font-semibold uppercase tracking-[0.32em] text-[rgb(214_178_97_/_0.7)]">
+          A vontade do povo
+        </span>
+        <h1 className="font-[var(--font-cinzel)] text-3xl font-bold leading-tight tracking-wide text-[rgb(239_223_187_/_0.98)] sm:text-4xl" style={{ textShadow: "0 0 40px rgb(214 178 97 / 0.35), 0 2px 6px rgb(0 0 0 / 0.6)" }}>
+          Resultado Final
+        </h1>
+        <div className="mt-4 h-px w-32 bg-gradient-to-r from-transparent via-[rgb(214_178_97_/_0.7)] to-transparent" />
+      </div>
       <FinalConfigDisplay
         finalConfig={finalConfig}
         configSchema={configSchema}
@@ -267,6 +276,13 @@ function SpotlightPhase({ items, onDone }: { items: SpotlightItem[]; onDone: () 
 // Final config display
 // ---------------------------------------------------------------------------
 
+type ResultEntry = {
+  value: string | number | boolean;
+  label: string;
+  total: number;
+  byVoter: Record<string, number>;
+};
+
 function FinalConfigDisplay({
   finalConfig,
   configSchema,
@@ -278,21 +294,40 @@ function FinalConfigDisplay({
   leaders: LeaderEntry[];
   players: ServerPlayer[];
 }) {
+  const nicknameById = new Map(players.map((p) => [p.id, p.nickname]));
+  const matchFields = Object.keys(finalConfig.match);
+  const bannedCiv = finalConfig.match.bannedCivilizations;
+
   return (
-    <div className="mt-5 space-y-6">
-      {Object.keys(finalConfig.match).length > 0 && (
+    <div className="mt-8 space-y-7">
+      {matchFields.length > 0 && (
         <section>
-          <h2 className="mb-3 font-[var(--font-cinzel)] text-lg tracking-wide text-[rgb(239_223_187_/_0.9)]">
-            Partida
-          </h2>
-          <div className="space-y-1.5">
-            {Object.entries(finalConfig.match).map(([field, value]) => {
+          <SectionHeader
+            avatar={
+              <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[rgb(190_153_81_/_0.45)] bg-[rgb(23_47_76_/_0.7)] text-[rgb(214_178_97_/_0.85)]">
+                <Globe className="h-4 w-4" />
+              </div>
+            }
+            title="Partida"
+            subtitle="Configurações globais"
+          />
+          <div className="space-y-2">
+            {matchFields.map((field) => {
               const schema = configSchema?.matchConfig[field];
+              const winner = finalConfig.match[field];
+              const breakdown = finalConfig.voteBreakdown?.match[field];
+              const entries = buildEntries(breakdown, field, "match", configSchema, leaders);
+              const winnerEntry = winner !== null
+                ? entries.find((e) => String(e.value) === String(winner))
+                : undefined;
               return (
-                <ResultRow
+                <ResultCard
                   key={field}
                   label={schema?.label ?? field}
-                  value={resolveValueLabel(value, field, "match", configSchema, leaders)}
+                  winnerLabel={winner !== null ? resolveValueLabel(winner, field, "match", configSchema, leaders) : "—"}
+                  winnerTotal={winnerEntry?.total ?? 0}
+                  entries={entries}
+                  nicknameById={nicknameById}
                 />
               );
             })}
@@ -303,35 +338,54 @@ function FinalConfigDisplay({
       {players.map((player) => {
         const playerResult = finalConfig.players[player.id];
         if (!playerResult || Object.keys(playerResult).length === 0) return null;
-        const bannedCiv = finalConfig.match.bannedCivilizations;
         const playerCiv = playerResult.civilization;
         const civBanned = bannedCiv != null && playerCiv != null && String(playerCiv) === String(bannedCiv);
         const runnerUp = civBanned ? (finalConfig.runnerUpCivilization?.[player.id] ?? null) : null;
+        const effectiveCiv = runnerUp ?? playerCiv;
+        const leader = typeof effectiveCiv === "number"
+          ? leaders.find((l) => l.id === effectiveCiv)
+          : undefined;
         return (
           <section key={player.id}>
-            <h2 className="mb-3 font-[var(--font-cinzel)] text-lg tracking-wide text-[rgb(239_223_187_/_0.9)]">
-              {player.nickname}
-            </h2>
-            <div className="space-y-1.5">
-              {Object.entries(playerResult).map(([field, value]) => {
+            <SectionHeader
+              avatar={
+                leader?.leaderPortrait ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={leader.leaderPortrait}
+                    alt=""
+                    className="h-10 w-10 rounded-full border border-[rgb(190_153_81_/_0.45)] object-cover bg-[rgb(11_25_44_/_0.6)]"
+                  />
+                ) : (
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[rgb(190_153_81_/_0.45)] bg-[rgb(23_47_76_/_0.7)] text-[rgb(214_178_97_/_0.85)]">
+                    <User className="h-4 w-4" />
+                  </div>
+                )
+              }
+              title={player.nickname}
+              subtitle={leader ? `${leader.leader} · ${leader.civilization}` : undefined}
+            />
+            <div className="space-y-2">
+              {Object.entries(playerResult).map(([field, winner]) => {
                 const schema = configSchema?.playerConfig[field];
                 const isCivField = field === "civilization";
                 const banned = isCivField && civBanned;
+                const breakdown = finalConfig.voteBreakdown?.players[player.id]?.[field];
+                const entries = buildEntries(breakdown, field, { playerId: player.id }, configSchema, leaders);
+                const winnerEntry = winner !== null
+                  ? entries.find((e) => String(e.value) === String(winner))
+                  : undefined;
                 return (
-                  <div key={field}>
-                    <ResultRow
-                      label={schema?.label ?? field}
-                      value={resolveValueLabel(value, field, { playerId: player.id }, configSchema, leaders)}
-                      banned={banned}
-                    />
-                    {banned && runnerUp !== null && (
-                      <ResultRow
-                        label="2ª opção"
-                        value={resolveValueLabel(runnerUp, "civilization", { playerId: player.id }, configSchema, leaders)}
-                        highlight
-                      />
-                    )}
-                  </div>
+                  <ResultCard
+                    key={field}
+                    label={schema?.label ?? field}
+                    winnerLabel={winner !== null ? resolveValueLabel(winner, field, { playerId: player.id }, configSchema, leaders) : "—"}
+                    winnerTotal={winnerEntry?.total ?? 0}
+                    entries={entries}
+                    nicknameById={nicknameById}
+                    banned={banned}
+                    runnerUpLabel={banned && runnerUp !== null ? resolveValueLabel(runnerUp, "civilization", { playerId: player.id }, configSchema, leaders) : undefined}
+                  />
                 );
               })}
             </div>
@@ -342,25 +396,184 @@ function FinalConfigDisplay({
   );
 }
 
-function ResultRow({ label, value, banned, highlight }: { label: string; value: string; banned?: boolean; highlight?: boolean }) {
+function SectionHeader({ avatar, title, subtitle }: { avatar: React.ReactNode; title: string; subtitle?: string }) {
   return (
-    <div className={[
-      "flex items-center justify-between gap-3 rounded-lg border px-3 py-2",
-      banned
-        ? "border-[rgb(220_80_80_/_0.35)] bg-[rgb(40_10_10_/_0.6)]"
-        : highlight
-          ? "border-[rgb(190_153_81_/_0.4)] bg-[rgb(20_40_20_/_0.6)]"
-          : "border-[rgb(190_153_81_/_0.2)] bg-[rgb(10_20_34_/_0.6)]",
-    ].join(" ")}>
-      <span className="text-xs font-semibold uppercase tracking-[0.1em] text-[rgb(214_178_97_/_0.75)]">
-        {label}
-        {banned && <span className="ml-1.5 text-[rgb(220_80_80_/_0.8)]">· banida</span>}
-      </span>
-      <span className={["text-sm", banned ? "text-[rgb(220_150_150_/_0.7)] line-through" : "text-[rgb(232_209_158_/_0.9)]"].join(" ")}>
-        {value}
-      </span>
+    <div className="mb-4 flex items-center gap-3">
+      {avatar}
+      <div className="min-w-0 flex-1">
+        <h2 className="font-[var(--font-cinzel)] text-lg leading-tight tracking-wide text-[rgb(239_223_187_/_0.95)]">
+          {title}
+        </h2>
+        {subtitle && (
+          <p className="truncate text-xs text-[rgb(206_189_156_/_0.6)]">{subtitle}</p>
+        )}
+      </div>
+      <div className="ml-1 h-px flex-1 bg-gradient-to-r from-[rgb(190_153_81_/_0.5)] to-transparent" />
     </div>
   );
+}
+
+function ResultCard({
+  label,
+  winnerLabel,
+  winnerTotal,
+  entries,
+  nicknameById,
+  banned,
+  runnerUpLabel,
+}: {
+  label: string;
+  winnerLabel: string;
+  winnerTotal: number;
+  entries: ResultEntry[];
+  nicknameById: Map<string, string>;
+  banned?: boolean;
+  runnerUpLabel?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const canExpand = entries.length > 0;
+
+  return (
+    <div className={[
+      "overflow-hidden rounded-xl border transition-colors",
+      banned
+        ? "border-[rgb(220_80_80_/_0.35)] bg-[rgb(40_10_10_/_0.45)]"
+        : "border-[rgb(190_153_81_/_0.3)] bg-[rgb(10_20_34_/_0.65)]",
+    ].join(" ")}>
+      <button
+        type="button"
+        onClick={() => canExpand && setOpen((o) => !o)}
+        disabled={!canExpand}
+        className={[
+          "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors",
+          canExpand ? "cursor-pointer hover:bg-[rgb(23_47_76_/_0.35)]" : "cursor-default",
+        ].join(" ")}
+      >
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[rgb(214_178_97_/_0.7)]">
+            <span>{label}</span>
+            {banned && (
+              <span className="rounded-sm bg-[rgb(220_80_80_/_0.2)] px-1.5 py-0.5 text-[9px] text-[rgb(240_170_170_/_0.95)]">
+                banida
+              </span>
+            )}
+          </div>
+          <div className={[
+            "mt-0.5 font-[var(--font-cinzel)] text-base font-semibold leading-tight sm:text-lg",
+            banned
+              ? "text-[rgb(220_150_150_/_0.65)] line-through decoration-[rgb(220_80_80_/_0.55)]"
+              : "text-[rgb(239_223_187_/_0.96)]",
+          ].join(" ")}>
+            {winnerLabel}
+          </div>
+          {banned && runnerUpLabel && (
+            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[rgb(142_200_140_/_0.85)]">
+                2ª opção
+              </span>
+              <span className="font-[var(--font-cinzel)] text-base font-semibold text-[rgb(200_230_190_/_0.96)]">
+                {runnerUpLabel}
+              </span>
+            </div>
+          )}
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          {winnerTotal > 0 && (
+            <span className="rounded-full border border-[rgb(190_153_81_/_0.4)] bg-[rgb(11_25_44_/_0.75)] px-2 py-0.5 text-xs font-semibold tabular-nums text-[rgb(214_178_97_/_0.85)]">
+              {winnerTotal} pts
+            </span>
+          )}
+          {canExpand && (
+            <ChevronDown
+              className={[
+                "h-4 w-4 text-[rgb(206_189_156_/_0.55)] transition-transform duration-200",
+                open ? "rotate-180" : "",
+              ].join(" ")}
+            />
+          )}
+        </div>
+      </button>
+
+      {open && canExpand && (
+        <div className="space-y-2 border-t border-[rgb(190_153_81_/_0.2)] bg-[rgb(6_14_26_/_0.5)] px-4 py-3">
+          {entries.map((entry, i) => {
+            const isWinner = entry.label === winnerLabel;
+            const voters = Object.entries(entry.byVoter).sort((a, b) => b[1] - a[1]);
+            return (
+              <div
+                key={i}
+                className={[
+                  "rounded-lg border px-3 py-2",
+                  isWinner
+                    ? "border-[rgb(214_178_97_/_0.45)] bg-[rgb(23_47_76_/_0.55)]"
+                    : "border-[rgb(190_153_81_/_0.15)] bg-[rgb(10_20_34_/_0.45)]",
+                ].join(" ")}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className={[
+                    "flex items-center gap-1.5 text-sm font-medium",
+                    isWinner ? "text-[rgb(239_223_187_/_0.96)]" : "text-[rgb(206_189_156_/_0.8)]",
+                  ].join(" ")}>
+                    {isWinner && <Crown className="h-3 w-3 shrink-0 text-[rgb(214_178_97_/_0.85)]" />}
+                    <span>{entry.label}</span>
+                  </span>
+                  <span className={[
+                    "shrink-0 tabular-nums text-xs font-semibold",
+                    isWinner ? "text-[rgb(214_178_97_/_0.9)]" : "text-[rgb(214_178_97_/_0.65)]",
+                  ].join(" ")}>
+                    {entry.total} pts
+                  </span>
+                </div>
+                {voters.length > 0 && (
+                  <ul className="mt-1.5 space-y-0.5">
+                    {voters.map(([voterId, weight]) => (
+                      <li key={voterId} className="flex items-center justify-between gap-2 text-xs">
+                        <span className="truncate text-[rgb(206_189_156_/_0.6)]">
+                          ↳ {nicknameById.get(voterId) ?? "Jogador"}
+                        </span>
+                        <span className="shrink-0 tabular-nums text-[rgb(206_189_156_/_0.7)]">
+                          {weight} pts
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function buildEntries(
+  breakdown: Record<string, VoteBreakdownEntry> | undefined,
+  field: string,
+  scope: VoteScope | "match",
+  configSchema: GameConfigSchema | null,
+  leaders: LeaderEntry[],
+): ResultEntry[] {
+  if (!breakdown) return [];
+  return Object.entries(breakdown)
+    .map(([rawVal, entry]) => {
+      const coerced = coerceRawValue(rawVal);
+      return {
+        value: coerced,
+        label: resolveValueLabel(coerced, field, scope, configSchema, leaders),
+        total: entry.total,
+        byVoter: entry.byVoter,
+      };
+    })
+    .sort((a, b) => b.total - a.total);
+}
+
+function coerceRawValue(raw: string): string | number | boolean {
+  if (raw === "true") return true;
+  if (raw === "false") return false;
+  const n = Number(raw);
+  if (!Number.isNaN(n) && raw.trim() !== "") return n;
+  return raw;
 }
 
 // ---------------------------------------------------------------------------

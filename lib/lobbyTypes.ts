@@ -136,10 +136,24 @@ export type VotingState = {
   finalConfig?: FinalConfig;
 };
 
+// Per-value vote breakdown: total weight + per-voter contribution
+export type VoteBreakdownEntry = {
+  total: number;
+  byVoter: Record<string, number>;  // voterId → weight contributed
+};
+
+// Nested breakdown structure: field → stringified-value → entry
+export type VoteBreakdown = {
+  match: Record<string, Record<string, VoteBreakdownEntry>>;
+  players: Record<string, Record<string, Record<string, VoteBreakdownEntry>>>;
+};
+
 // Final resolved configuration after all votes and tie-breaks
 export type FinalConfig = {
   match: Record<string, string | number | boolean | null>;
   players: Record<string, Record<string, string | number | boolean | null>>;  // playerId → field → value
   // Second-most-voted civilization per player (used when first choice is banned)
   runnerUpCivilization?: Record<string, string | number | boolean | null>;    // playerId → civId
+  // Full vote breakdown across all turns (totals + per-voter contributions)
+  voteBreakdown?: VoteBreakdown;
 };
