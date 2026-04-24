@@ -8,6 +8,7 @@ import type {
   TieBreakPending,
   TurnLedger,
   VoteAccumulator,
+  VoteBreakdown,
   VoteCast,
   VoteScope,
   VotingState,
@@ -40,6 +41,9 @@ export default class LobbyServer implements Party.Server {
 
   // Global vote accumulator across all turns
   accumulator: VoteAccumulator = {};
+
+  // Per-voter breakdown: accumulator key → voterId → total weight across all turns
+  breakdown: Record<string, Record<string, number>> = {};
 
   // Pending tie-breaks
   pendingTieBreaks: TieBreakPending[] = [];
@@ -96,6 +100,7 @@ export default class LobbyServer implements Party.Server {
           this.currentTurn = 1;
           this.currentLedger = { turn: 1, votes: [], spendByVoter: {} };
           this.accumulator = {};
+          this.breakdown = {};
           this.pendingTieBreaks = [];
           this.finalConfig = null;
           this.readyToEndTurn = new Set();
@@ -214,6 +219,8 @@ export default class LobbyServer implements Party.Server {
 
     const key = accumulatorKey(scope, field, value);
     this.accumulator[key] = (this.accumulator[key] ?? 0) + weight;
+    if (!this.breakdown[key]) this.breakdown[key] = {};
+    this.breakdown[key][sender.id] = (this.breakdown[key][sender.id] ?? 0) + weight;
 
     this.broadcastVotingState();
   }
@@ -248,6 +255,13 @@ export default class LobbyServer implements Party.Server {
     const key = accumulatorKey(scope, field, value);
     this.accumulator[key] = Math.max(0, (this.accumulator[key] ?? 0) - removed.weight);
     if (this.accumulator[key] === 0) delete this.accumulator[key];
+
+    if (this.breakdown[key]) {
+      const voterTotal = Math.max(0, (this.breakdown[key][sender.id] ?? 0) - removed.weight);
+      if (voterTotal === 0) delete this.breakdown[key][sender.id];
+      else this.breakdown[key][sender.id] = voterTotal;
+      if (Object.keys(this.breakdown[key]).length === 0) delete this.breakdown[key];
+    }
 
     this.broadcastVotingState();
   }
@@ -329,7 +343,34 @@ export default class LobbyServer implements Party.Server {
       if (second !== null) runnerUpCivilization[playerId] = second;
     }
 
-    this.finalConfig = { match: matchResult, players: playersResult, runnerUpCivilization };
+    const voteBreakdown: VoteBreakdown = { match: {}, players: {} };
+    for (const [key, total] of Object.entries(this.accumulator)) {
+      const byVoter = this.breakdown[key] ?? {};
+      if (key.startsWith("match|")) {
+        const rest = key.slice("match|".length);
+        const pipeIdx = rest.indexOf("|");
+        if (pipeIdx === -1) continue;
+        const field = rest.slice(0, pipeIdx);
+        const value = rest.slice(pipeIdx + 1);
+        if (!voteBreakdown.match[field]) voteBreakdown.match[field] = {};
+        voteBreakdown.match[field][value] = { total, byVoter: { ...byVoter } };
+      } else if (key.startsWith("player|")) {
+        const rest = key.slice("player|".length);
+        const firstPipe = rest.indexOf("|");
+        if (firstPipe === -1) continue;
+        const playerId = rest.slice(0, firstPipe);
+        const afterPlayer = rest.slice(firstPipe + 1);
+        const secondPipe = afterPlayer.indexOf("|");
+        if (secondPipe === -1) continue;
+        const field = afterPlayer.slice(0, secondPipe);
+        const value = afterPlayer.slice(secondPipe + 1);
+        if (!voteBreakdown.players[playerId]) voteBreakdown.players[playerId] = {};
+        if (!voteBreakdown.players[playerId][field]) voteBreakdown.players[playerId][field] = {};
+        voteBreakdown.players[playerId][field][value] = { total, byVoter: { ...byVoter } };
+      }
+    }
+
+    this.finalConfig = { match: matchResult, players: playersResult, runnerUpCivilization, voteBreakdown };
     this.pendingTieBreaks = newPendingTieBreaks;
 
     if (newPendingTieBreaks.length > 0) {
