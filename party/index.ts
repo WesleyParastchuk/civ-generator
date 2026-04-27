@@ -395,6 +395,32 @@ export default class LobbyServer implements Party.Server {
     this.broadcastVotingState();
   }
 
+  resolveOrderedField(
+    scope: VoteScope,
+    field: string,
+    order: readonly string[],
+  ): {
+    winner: string | number | boolean | null;
+    tied: boolean;
+    tiedValues: Array<string | number | boolean>;
+    maxWeight: number;
+  } {
+    const prefix = `${scopeKey(scope)}|${field}|`;
+    let totalWeight = 0;
+    let weightedSum = 0;
+    for (const [idx, val] of order.entries()) {
+      const key = `${prefix}${val}`;
+      const w = this.accumulator[key] ?? 0;
+      weightedSum += idx * w;
+      totalWeight += w;
+    }
+    if (totalWeight === 0) {
+      return { winner: null, tied: true, tiedValues: [], maxWeight: 0 };
+    }
+    const avgIdx = Math.round(weightedSum / totalWeight);
+    return { winner: order[avgIdx], tied: false, tiedValues: [], maxWeight: totalWeight };
+  }
+
   resolveField(
     scope: VoteScope,
     field: string
