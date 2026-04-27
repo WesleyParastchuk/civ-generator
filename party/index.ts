@@ -430,6 +430,9 @@ export default class LobbyServer implements Party.Server {
     tiedValues: Array<string | number | boolean>;
     maxWeight: number;
   } {
+    if (field === "difficulty") {
+      return this.resolveOrderedField(scope, field, DIFFICULTY_ORDER);
+    }
     const prefix = `${scopeKey(scope)}|${field}|`;
     let maxWeight = 0;
     const candidateMap = new Map<string, number>();
