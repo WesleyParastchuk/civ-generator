@@ -18,6 +18,17 @@ const INACTIVITY_MS = 30 * 60 * 1000;
 const BETWEEN_TURNS_MS = 5000;
 const DEFAULT_TURN_DURATION_S = 120;
 
+const DIFFICULTY_ORDER = [
+  "settler",
+  "chieftain",
+  "warlord",
+  "prince",
+  "king",
+  "emperor",
+  "immortal",
+  "deity",
+] as const;
+
 function scopeKey(scope: VoteScope): string {
   if (scope === "match") return "match";
   return `player|${scope.playerId}`;
