@@ -82,16 +82,18 @@ export default class LobbyServer implements Party.Server {
     const msg = JSON.parse(message) as ClientMessage;
 
     if (msg.type === "join") {
+      if (this.gamePhase !== "lobby") {
+        const denied: ServerMessage = { type: "room_expired" };
+        sender.send(JSON.stringify(denied));
+        sender.close();
+        return;
+      }
       const { nickname, isHost, config } = msg.payload;
-      if (isHost && config && this.gamePhase === "lobby") this.config = config;
+      if (isHost && config) this.config = config;
       this.players.set(sender.id, { nickname, ready: false, isHost });
       const welcome: ServerMessage = { type: "welcome", payload: { connectionId: sender.id } };
       sender.send(JSON.stringify(welcome));
       this.broadcast();
-      if (this.gamePhase !== "lobby") {
-        const stateMsg = this.buildVotingStateMsg();
-        if (stateMsg) sender.send(JSON.stringify(stateMsg));
-      }
 
     } else if (msg.type === "update_config") {
       const player = this.players.get(sender.id);
@@ -415,7 +417,7 @@ export default class LobbyServer implements Party.Server {
       totalWeight += w;
     }
     if (totalWeight === 0) {
-      return { winner: null, tied: true, tiedValues: [], maxWeight: 0 };
+      return { winner: null, tied: true, tiedValues: [...order], maxWeight: 0 };
     }
     const avgIdx = Math.round(weightedSum / totalWeight);
     return { winner: order[avgIdx], tied: false, tiedValues: [], maxWeight: totalWeight };
@@ -530,13 +532,33 @@ export default class LobbyServer implements Party.Server {
   }
 
   onClose(conn: Party.Connection) {
+    const wasHost = this.players.get(conn.id)?.isHost ?? false;
     this.players.delete(conn.id);
+    this.readyToEndTurn.delete(conn.id);
+
     if (this.players.size === 0) {
       if (this.cleanupTimer) clearTimeout(this.cleanupTimer);
       this.cleanupTimer = null;
       return;
     }
-    this.broadcast();
+
+    // Re-elect host to first remaining player if host disconnected mid-game
+    if (wasHost && this.gamePhase !== "lobby") {
+      const first = this.players.values().next().value;
+      if (first) first.isHost = true;
+    }
+
+    // If all remaining players already clicked end-turn, advance now
+    if (this.gamePhase === "playing" && this.readyToEndTurn.size >= this.players.size) {
+      this.endTurn();
+      return;
+    }
+
+    // During game_over, player list is frozen on clients — skip redundant broadcast
+    if (this.gamePhase !== "game_over") {
+      this.broadcast();
+    }
+    if (this.gamePhase !== "lobby" && this.gamePhase !== "game_over") this.broadcastVotingState();
     this.resetTimer();
   }
 
