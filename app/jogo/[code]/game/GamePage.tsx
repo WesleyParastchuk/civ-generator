@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import usePartySocket from "partysocket/react";
 import type {
   ClientMessage,
@@ -61,11 +62,13 @@ function buildMyTurnTally(
 }
 
 export function GamePage({ code }: { code: string }) {
+  const router = useRouter();
   const [session, setSession] = useState<GameSession | null>(null);
   const [sessionReady, setSessionReady] = useState(false);
 
   const [myId, setMyId] = useState<string | null>(null);
   const [players, setPlayers] = useState<ServerPlayer[]>([]);
+  const [frozenPlayers, setFrozenPlayers] = useState<ServerPlayer[] | null>(null);
   const [votingState, setVotingState] = useState<VotingState | null>(null);
   const [configSchema, setConfigSchema] = useState<GameConfigSchema | null>(null);
   const [leaders, setLeaders] = useState<LeaderEntry[]>([]);
@@ -74,12 +77,23 @@ export function GamePage({ code }: { code: string }) {
 
   const joinSentRef = useRef(false);
 
+  // Freeze player list when game ends so disconnects don't remove players from results
+  useEffect(() => {
+    if (votingState?.phase === "game_over" && !frozenPlayers) {
+      setFrozenPlayers(players); // eslint-disable-line react-hooks/set-state-in-effect
+    }
+  }, [votingState?.phase]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Read sessionStorage client-side only (avoids SSR hydration mismatch)
   useEffect(() => {
     const raw = sessionStorage.getItem(`game-${code}`);
-    setSession(raw ? (JSON.parse(raw) as GameSession) : null); // eslint-disable-line react-hooks/set-state-in-effect
+    if (!raw) {
+      router.replace("/");
+      return;
+    }
+    setSession(JSON.parse(raw) as GameSession); // eslint-disable-line react-hooks/set-state-in-effect
     setSessionReady(true);
-  }, [code]);
+  }, [code, router]);
 
   // Fetch config.json + leaders.json
   useEffect(() => {
@@ -131,21 +145,11 @@ export function GamePage({ code }: { code: string }) {
   };
 
   const handleEndTurn = () => { setIReadyToEnd(true); sendMsg({ type: "end_turn" }); };
-  const handleConfirmNextTurn = () => sendMsg({ type: "confirm_next_turn" });
-
   const handleResolveTie = (pending: TieBreakPending, value: string | number | boolean) => {
     sendMsg({ type: "resolve_tie", payload: { scope: pending.scope, field: pending.field, value } });
   };
 
-  if (!sessionReady) return null;
-
-  if (!session) {
-    return (
-      <div className="imperial-border mx-auto w-full max-w-3xl rounded-3xl border border-[rgb(212_171_86_/_0.4)] bg-[rgb(11_26_46_/_0.84)] p-10 text-center">
-        <p className="text-[rgb(206_189_156_/_0.7)]">Sessão expirada. Volte ao início.</p>
-      </div>
-    );
-  }
+  if (!sessionReady || !session) return null;
 
   // Game over screen
   if (votingState?.phase === "game_over") {
@@ -155,7 +159,7 @@ export function GamePage({ code }: { code: string }) {
           votingState={votingState}
           configSchema={configSchema}
           leaders={leaders}
-          players={players}
+          players={frozenPlayers ?? players}
           isHost={session.isHost}
           onResolveTie={handleResolveTie}
         />
@@ -183,8 +187,6 @@ export function GamePage({ code }: { code: string }) {
     (entry): entry is [string, ConfigFieldSchema] =>
       typeof entry[1] === "object" && entry[1] !== null && "type" in entry[1],
   );
-
-  const myVotesThisTurn = votingState?.currentTurnVotes.filter((v) => v.voterId === myId).length ?? 0;
 
   return (
     <>
@@ -217,6 +219,7 @@ export function GamePage({ code }: { code: string }) {
               pointsPerTurn={pointsPerTurn}
               pointsSpent={mySpent}
               deadline={votingState?.turnDeadline ?? 0}
+              durationMs={(session?.config.turnDurationSeconds ?? 0) * 1000}
             />
           </div>
 
