@@ -8,6 +8,7 @@ type Props = {
   pointsPerTurn: number;
   pointsSpent: number;
   deadline: number; // UTC ms; 0 = not active
+  durationMs: number; // total turn duration in ms; 0 = no timer
 };
 
 function formatCountdown(ms: number): string {
@@ -17,7 +18,7 @@ function formatCountdown(ms: number): string {
   return m > 0 ? `${m}:${String(s).padStart(2, "0")}` : `${s}s`;
 }
 
-export function TurnHeader({ currentTurn, totalTurns, pointsPerTurn, pointsSpent, deadline }: Props) {
+export function TurnHeader({ currentTurn, totalTurns, pointsPerTurn, pointsSpent, deadline, durationMs }: Props) {
   const remaining = pointsPerTurn - pointsSpent;
   const pct = Math.max(0, (remaining / pointsPerTurn) * 100);
 
@@ -26,17 +27,15 @@ export function TurnHeader({ currentTurn, totalTurns, pointsPerTurn, pointsSpent
   );
 
   useEffect(() => {
-    if (deadline <= 0) {
-      setTimeLeftMs(0);
-      return;
-    }
+    if (deadline <= 0) return;
     const update = () => setTimeLeftMs(Math.max(0, deadline - Date.now()));
     update();
     const id = setInterval(update, 500);
     return () => clearInterval(id);
   }, [deadline]);
 
-  const timePct = deadline > 0 ? timeLeftMs / ((deadline - Date.now() + timeLeftMs) || 1) : 1;
+  const totalMs = durationMs > 0 ? durationMs : 1;
+  const timePct = deadline > 0 ? timeLeftMs / totalMs : 1;
   const timeColor =
     timeLeftMs === 0
       ? "text-[rgb(206_189_156_/_0.4)]"
