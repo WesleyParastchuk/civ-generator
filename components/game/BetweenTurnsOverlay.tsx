@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ScrollText } from "lucide-react";
-import { CountdownShell, CountdownNumber } from "@/components/game/CountdownDisplay";
+import { CountdownNumber } from "@/components/game/CountdownDisplay";
 import { generateRumors } from "@/lib/rumors";
 import type { VoteCast, ServerPlayer, GameConfigSchema } from "@/lib/lobbyTypes";
 import type { LeaderEntry } from "@/components/game/VotingField";

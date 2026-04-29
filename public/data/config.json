@@ -1,6 +1,5 @@
 {
   "playerConfig": {
-    "description": "Configurações aplicadas a cada jogador individualmente",
     "civilization": {
       "label": "Civilização",
       "type": "select",
@@ -46,7 +45,6 @@
     }
   },
   "matchConfig": {
-    "description": "Configurações aplicadas a toda a partida",
     "mapType": {
       "label": "Tipo de Mapa",
       "type": "select",
