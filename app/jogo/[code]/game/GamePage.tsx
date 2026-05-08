@@ -14,11 +14,17 @@ import type {
   VoteScope,
   VotingState,
 } from "@/lib/lobbyTypes";
-import { Flag, Globe, User } from "lucide-react";
-import { TurnHeader } from "@/components/game/TurnHeader";
+import { Cloud, Coins, Flag, Globe, Hourglass, Mountain, ScrollText, User } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { HelpTooltip } from "@/components/game/HelpTooltip";
+import { PlayerPip } from "@/components/game/PlayerPip";
 import { BetweenTurnsOverlay } from "@/components/game/BetweenTurnsOverlay";
 import { VotingField, type LeaderEntry } from "@/components/game/VotingField";
 import { GameOverScreen } from "@/components/game/GameOverScreen";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
 type GameSession = {
   config: { turns: number; pointsPerTurn: number; turnDurationSeconds: number };
@@ -26,13 +32,26 @@ type GameSession = {
   nickname: string;
 };
 
-type Tab = { id: string; label: string; scope: VoteScope };
+// ---------------------------------------------------------------------------
+// Area config
+// ---------------------------------------------------------------------------
 
-function buildTurnTally(
-  votes: VoteCast[],
-  scope: VoteScope,
-  field: string,
-): Record<string, number> {
+const MATCH_AREAS: { id: string; label: string; description: string; icon: LucideIcon; fields: string[] }[] = [
+  { id: "terreno",  label: "Terreno", description: "Define a geografia e a vantagem estratégica inicial", icon: Mountain,   fields: ["mapType", "cityStates", "startingPosition"] },
+  { id: "mundo",    label: "Mundo",   description: "Afeta riqueza de recursos e expansão territorial",   icon: Globe,      fields: ["resources", "seaLevel"] },
+  { id: "clima",    label: "Clima",   description: "Determina os biomas e tipos de terreno do mapa",     icon: Cloud,      fields: ["temperature", "precipitation"] },
+  { id: "regras",   label: "Regras",  description: "Altera mecânicas centrais e condições de vitória",   icon: ScrollText, fields: ["barbarians", "tribalVillages", "disabledVictoryConditions", "randomCivicMode", "bannedCivilizations"] },
+];
+
+const PLAYER_AREAS: { id: string; label: string; description: string; icon: LucideIcon; fields: string[] }[] = [
+  { id: "jogador", label: "Jogador", description: "Define civilização, dificuldade e limites do jogador", icon: User, fields: ["civilization", "difficulty", "maxIdleTurns", "maxCities"] },
+];
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function buildTurnTally(votes: VoteCast[], scope: VoteScope, field: string): Record<string, number> {
   const scopeId = scope === "match" ? "match" : scope.playerId;
   const result: Record<string, number> = {};
   for (const vote of votes) {
@@ -44,12 +63,7 @@ function buildTurnTally(
   return result;
 }
 
-function buildMyTurnTally(
-  votes: VoteCast[],
-  voterId: string,
-  scope: VoteScope,
-  field: string,
-): Record<string, number> {
+function buildMyTurnTally(votes: VoteCast[], voterId: string, scope: VoteScope, field: string): Record<string, number> {
   const scopeId = scope === "match" ? "match" : scope.playerId;
   const result: Record<string, number> = {};
   for (const vote of votes) {
@@ -60,6 +74,16 @@ function buildMyTurnTally(
   }
   return result;
 }
+
+function formatCountdown(ms: number): string {
+  const s = Math.max(0, Math.ceil(ms / 1000));
+  const m = Math.floor(s / 60);
+  return m > 0 ? `${m}:${String(s % 60).padStart(2, "0")}` : `${s}s`;
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
 
 export function GamePage({ code }: { code: string }) {
   const router = useRouter();
@@ -72,30 +96,40 @@ export function GamePage({ code }: { code: string }) {
   const [votingState, setVotingState] = useState<VotingState | null>(null);
   const [configSchema, setConfigSchema] = useState<GameConfigSchema | null>(null);
   const [leaders, setLeaders] = useState<LeaderEntry[]>([]);
-  const [activeTab, setActiveTab] = useState<string>("match");
+
+  const [activeScope, setActiveScope] = useState<VoteScope>("match");
+  const [activeArea, setActiveArea] = useState<string>("terreno");
   const [iReadyToEnd, setIReadyToEnd] = useState(false);
+  const [timeLeftMs, setTimeLeftMs] = useState(0);
 
   const joinSentRef = useRef(false);
 
-  // Freeze player list when game ends so disconnects don't remove players from results
+  // Read session from sessionStorage (client-side only — avoids SSR hydration mismatch)
+  useEffect(() => {
+    const raw = sessionStorage.getItem(`game-${code}`);
+    if (!raw) { router.replace("/"); return; }
+    setSession(JSON.parse(raw) as GameSession); // eslint-disable-line react-hooks/set-state-in-effect
+    setSessionReady(true);
+  }, [code, router]);
+
+  // Freeze player list on game over so disconnects don't remove players from results
   useEffect(() => {
     if (votingState?.phase === "game_over" && !frozenPlayers) {
       setFrozenPlayers(players); // eslint-disable-line react-hooks/set-state-in-effect
     }
   }, [votingState?.phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Read sessionStorage client-side only (avoids SSR hydration mismatch)
+  // Countdown timer
   useEffect(() => {
-    const raw = sessionStorage.getItem(`game-${code}`);
-    if (!raw) {
-      router.replace("/");
-      return;
-    }
-    setSession(JSON.parse(raw) as GameSession); // eslint-disable-line react-hooks/set-state-in-effect
-    setSessionReady(true);
-  }, [code, router]);
+    const deadline = votingState?.turnDeadline ?? 0;
+    if (deadline <= 0) return;
+    const update = () => setTimeLeftMs(Math.max(0, deadline - Date.now()));
+    update();
+    const id = setInterval(update, 500);
+    return () => clearInterval(id);
+  }, [votingState?.turnDeadline]);
 
-  // Fetch config.json + leaders.json
+  // Fetch config + leaders
   useEffect(() => {
     fetch("/data/config.json")
       .then((r) => r.json())
@@ -113,19 +147,16 @@ export function GamePage({ code }: { code: string }) {
     onOpen() {
       if (joinSentRef.current || !session) return;
       joinSentRef.current = true;
-      const msg: ClientMessage = {
+      socket.send(JSON.stringify({
         type: "join",
         payload: { nickname: session.nickname, isHost: session.isHost },
-      };
-      socket.send(JSON.stringify(msg));
+      } satisfies ClientMessage));
     },
     onMessage(evt) {
       const msg = JSON.parse(evt.data as string) as ServerMessage;
-      if (msg.type === "welcome") {
-        setMyId(msg.payload.connectionId);
-      } else if (msg.type === "room_update") {
-        setPlayers(msg.payload.players);
-      } else if (msg.type === "voting_state") {
+      if (msg.type === "welcome") setMyId(msg.payload.connectionId);
+      else if (msg.type === "room_update") setPlayers(msg.payload.players);
+      else if (msg.type === "voting_state") {
         setVotingState((prev) => {
           if (prev && prev.currentTurn !== msg.payload.currentTurn) setIReadyToEnd(false);
           return msg.payload;
@@ -135,58 +166,63 @@ export function GamePage({ code }: { code: string }) {
   });
 
   const sendMsg = (msg: ClientMessage) => socket.send(JSON.stringify(msg));
-
-  const handleVote = (scope: VoteScope, field: string, value: string | number | boolean, weight: number) => {
+  const handleVote = (scope: VoteScope, field: string, value: string | number | boolean, weight: number) =>
     sendMsg({ type: "cast_vote", payload: { scope, field, value, weight } });
-  };
-
-  const handleRemoveVote = (scope: VoteScope, field: string, value: string | number | boolean) => {
+  const handleRemoveVote = (scope: VoteScope, field: string, value: string | number | boolean) =>
     sendMsg({ type: "remove_vote", payload: { scope, field, value } });
-  };
-
   const handleEndTurn = () => { setIReadyToEnd(true); sendMsg({ type: "end_turn" }); };
-  const handleResolveTie = (pending: TieBreakPending, value: string | number | boolean) => {
+  const handleResolveTie = (pending: TieBreakPending, value: string | number | boolean) =>
     sendMsg({ type: "resolve_tie", payload: { scope: pending.scope, field: pending.field, value } });
-  };
 
   if (!sessionReady || !session) return null;
 
-  // Game over screen
+  // Game over
   if (votingState?.phase === "game_over") {
     return (
-      <>
-        <GameOverScreen
-          votingState={votingState}
-          configSchema={configSchema}
-          leaders={leaders}
-          players={frozenPlayers ?? players}
-          isHost={session.isHost}
-          onResolveTie={handleResolveTie}
-        />
-      </>
+      <GameOverScreen
+        votingState={votingState}
+        configSchema={configSchema}
+        leaders={leaders}
+        players={frozenPlayers ?? players}
+        isHost={session.isHost}
+        onResolveTie={handleResolveTie}
+      />
     );
   }
 
-  // Compute tabs from connected players
-  const tabs: Tab[] = [
-    { id: "match", label: "Partida", scope: "match" },
-    ...players.map((p) => ({ id: p.id, label: p.nickname, scope: { playerId: p.id } as VoteScope })),
-  ];
+  // ---------------------------------------------------------------------------
+  // Derived state
+  // ---------------------------------------------------------------------------
+
+  const isMatchScope = activeScope === "match";
+  const areas = isMatchScope ? MATCH_AREAS : PLAYER_AREAS;
+  const currentArea = areas.find((a) => a.id === activeArea) ?? areas[0];
+
+  const configSection = isMatchScope ? configSchema?.matchConfig : configSchema?.playerConfig;
+  const fields: [string, ConfigFieldSchema][] = (currentArea?.fields ?? [])
+    .map((key) => [key, configSection?.[key]])
+    .filter((entry): entry is [string, ConfigFieldSchema] =>
+      typeof entry[1] === "object" && entry[1] !== null && "type" in entry[1],
+    );
 
   const mySpent = votingState ? (votingState.spendByVoter[myId ?? ""] ?? 0) : 0;
   const pointsPerTurn = votingState?.pointsPerTurn ?? session.config.pointsPerTurn;
   const pointsRemaining = pointsPerTurn - mySpent;
   const currentTurn = votingState?.currentTurn ?? 1;
   const totalTurns = votingState?.totalTurns ?? session.config.turns;
+  const durationMs = session.config.turnDurationSeconds * 1000;
+  const timePct = durationMs > 0 ? timeLeftMs / durationMs : 1;
+  const timeColor = timePct < 0.2 ? "text-[rgb(220_80_70)]" : timePct < 0.5 ? "text-[rgb(220_170_60)]" : "text-[rgb(239_223_187)]";
+  const treasuryGlow = (votingState?.turnDeadline ?? 0) > 0
+    ? timePct < 0.2
+      ? "0 0 14px rgb(220 80 70 / 0.55), 0 0 4px rgb(220 80 70 / 0.3), inset 0 0 0 1px rgb(220 80 70 / 0.35)"
+      : timePct < 0.5
+        ? "0 0 14px rgb(220 170 60 / 0.45), 0 0 4px rgb(220 170 60 / 0.25), inset 0 0 0 1px rgb(220 170 60 / 0.3)"
+        : undefined
+    : undefined;
 
-  const activeScope = tabs.find((t) => t.id === activeTab)?.scope ?? "match";
-  const rawEntries = activeTab === "match"
-    ? Object.entries(configSchema?.matchConfig ?? {})
-    : Object.entries(configSchema?.playerConfig ?? {});
-  const fields = rawEntries.filter(
-    (entry): entry is [string, ConfigFieldSchema] =>
-      typeof entry[1] === "object" && entry[1] !== null && "type" in entry[1],
-  );
+  const myVotes = votingState?.currentTurnVotes.filter((v) => v.voterId === (myId ?? "")) ?? [];
+  const displayPlayers = frozenPlayers ?? players;
 
   return (
     <>
@@ -205,100 +241,215 @@ export function GamePage({ code }: { code: string }) {
         />
       )}
 
-      <div className="imperial-border mx-auto flex w-full max-w-3xl flex-col rounded-3xl border border-[rgb(212_171_86_/_0.4)] bg-[rgb(11_26_46_/_0.84)] shadow-[0_24px_60px_rgb(2_7_15_/_0.58)] backdrop-blur" style={{ maxHeight: "calc(100dvh - 3.5rem)" }}>
-        {/* Sticky header */}
-        <div className="shrink-0 px-5 pt-5 sm:px-8 sm:pt-8">
-          <h1 className="font-[var(--font-cinzel)] text-2xl font-bold tracking-wide text-[rgb(214_178_97_/_0.95)]">
-            Votação
-          </h1>
+      <div className="dev-game-bg flex h-full w-full overflow-hidden">
 
-          <div className="mt-4">
-            <TurnHeader
-              currentTurn={currentTurn}
-              totalTurns={totalTurns}
-              pointsPerTurn={pointsPerTurn}
-              pointsSpent={mySpent}
-              deadline={votingState?.turnDeadline ?? 0}
-              durationMs={(session?.config.turnDurationSeconds ?? 0) * 1000}
-            />
-          </div>
-
-          {/* Tabs */}
-          <div className="mt-4 flex flex-wrap gap-1.5">
-            {tabs.map((tab) => (
+        {/* ── LEFT SIDEBAR ── */}
+        <nav className="dev-sidebar-nav flex shrink-0 flex-col items-center gap-3 overflow-y-auto px-3 py-3">
+          <div className="dev-areas-label mb-2 shrink-0">ÁREAS</div>
+          {areas.map((area) => {
+            const Icon = area.icon;
+            const active = activeArea === area.id;
+            return (
               <button
-                key={tab.id}
+                key={area.id}
                 type="button"
-                onClick={() => setActiveTab(tab.id)}
-                className={[
-                  "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors",
-                  activeTab === tab.id
-                    ? "border-[rgb(214_178_97_/_0.6)] bg-[rgb(23_47_76_/_0.9)] text-[rgb(239_223_187_/_0.95)]"
-                    : "border-[rgb(190_153_81_/_0.25)] bg-transparent text-[rgb(206_189_156_/_0.6)] hover:text-[rgb(206_189_156_/_0.9)]",
-                ].join(" ")}
+                onClick={() => setActiveArea(area.id)}
+                className={`dev-area-btn flex flex-col items-center justify-center gap-1 transition-all duration-150 ${active ? "dev-area-btn-active" : "dev-area-btn-inactive"}`}
               >
-                {tab.id === "match"
-                  ? <Globe className="h-3 w-3 shrink-0" />
-                  : <User className="h-3 w-3 shrink-0" />}
-                {tab.label}
+                <Icon size="1.75em" strokeWidth={1.5} />
+                <span className="dev-area-btn__label">{area.label}</span>
               </button>
-            ))}
+            );
+          })}
+          <div className="mt-auto">
+            <HelpTooltip text="Use as áreas para navegar entre grupos de configuração da partida. Clique em uma área para ver e votar nas opções disponíveis naquele grupo." />
           </div>
-        </div>
+        </nav>
 
-        {/* Scrollable fields */}
-        <div className="flex-1 overflow-y-auto px-5 py-4 sm:px-8 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[rgb(190_153_81_/_0.25)] hover:[&::-webkit-scrollbar-thumb]:bg-[rgb(190_153_81_/_0.45)]">
-          <div className="space-y-4">
-            {configSchema && fields.map(([key, schema]) => (
-              <div key={key}>
-                <div className="mb-1.5 flex items-center gap-2">
-                  <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[rgb(214_180_104_/_0.88)]">
-                    {schema.label}
-                  </span>
-                  {"description" in schema && schema.description && (
-                    <span className="text-xs text-[rgb(206_189_156_/_0.5)]">— {schema.description}</span>
-                  )}
-                </div>
-                <VotingField
-                  fieldKey={key}
-                  schema={schema}
-                  leaders={leaders}
-                  pointsRemaining={pointsRemaining}
-                  turnVoteTally={buildTurnTally(votingState?.currentTurnVotes ?? [], activeScope, key)}
-                  myTurnVoteTally={myId ? buildMyTurnTally(votingState?.currentTurnVotes ?? [], myId, activeScope, key) : {}}
-                  onVote={(value, weight) => handleVote(activeScope, key, value, weight)}
-                  onRemoveVote={(value) => handleRemoveVote(activeScope, key, value)}
-                />
+        {/* ── CENTER: FIELDS ── */}
+        <main className="flex flex-1 flex-col overflow-hidden">
+          <header className="dev-area-header flex shrink-0 flex-wrap items-center gap-3">
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="dev-area-title">{currentArea?.label}</span>
+                <span className="dev-turn-pill inline-flex items-center gap-1.5">
+                  <Hourglass size={12} strokeWidth={1.5} />
+                  Turno {currentTurn} / {totalTurns}
+                </span>
+                <HelpTooltip text="Cada turno você recebe pontos para votar nas configurações da partida. Quando todos finalizarem o turno, os votos são contabilizados e as configurações com mais votos são aplicadas." />
               </div>
-            ))}
-            {!configSchema && (
-              <p className="text-sm text-[rgb(206_189_156_/_0.5)]">Carregando opções…</p>
-            )}
-          </div>
-        </div>
+              {currentArea?.description && (
+                <div className="dev-area-description">{currentArea.description}</div>
+              )}
+            </div>
 
-        {/* Sticky footer */}
-        <div className="shrink-0 px-5 pb-5 sm:px-8 sm:pb-8">
-          {/* End-turn button — all players must confirm */}
-          {votingState?.phase === "playing" && (
-            <div className="mt-4 flex justify-end">
+            {/* Scope tabs */}
+            <div className="dev-scope-bezel ml-auto flex items-center">
+              <button
+                type="button"
+                onClick={() => { setActiveScope("match"); setActiveArea("terreno"); }}
+                className={`dev-scope-tab inline-flex items-center justify-center gap-1.5 ${activeScope === "match" ? "dev-scope-tab-active" : "dev-scope-tab-inactive"}`}
+              >
+                <Globe size={13} strokeWidth={1.5} />
+                Partida
+              </button>
+              {players.map((p, i) => {
+                const active = activeScope !== "match" && (activeScope as { playerId: string }).playerId === p.id;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => { setActiveScope({ playerId: p.id }); setActiveArea("jogador"); }}
+                    className={`dev-scope-tab inline-flex items-center justify-center gap-1.5 ${active ? "dev-scope-tab-active" : "dev-scope-tab-inactive"}`}
+                  >
+                    <PlayerPip index={i} total={players.length} nickname={p.nickname} sealed={p.id === myId && iReadyToEnd} />
+                    {p.nickname}
+                  </button>
+                );
+              })}
+            </div>
+          </header>
+
+          {/* Scrollable fields */}
+          <div className="flex-1 overflow-y-auto px-6 py-5 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[rgb(190_153_81_/_0.2)] hover:[&::-webkit-scrollbar-thumb]:bg-[rgb(190_153_81_/_0.4)]">
+            <div className="space-y-5">
+              {configSchema && fields.map(([key, schema]) => (
+                <div key={key}>
+                  <div className="mb-1.5 flex items-center gap-2">
+                    <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[rgb(214_180_104_/_0.88)]">
+                      {schema.label}
+                    </span>
+                    {"description" in schema && schema.description && (
+                      <span className="text-xs text-[rgb(206_189_156_/_0.4)]">— {schema.description}</span>
+                    )}
+                  </div>
+                  <VotingField
+                    fieldKey={key}
+                    schema={schema}
+                    leaders={leaders}
+                    pointsRemaining={pointsRemaining}
+                    turnVoteTally={buildTurnTally(votingState?.currentTurnVotes ?? [], activeScope, key)}
+                    myTurnVoteTally={myId ? buildMyTurnTally(votingState?.currentTurnVotes ?? [], myId, activeScope, key) : {}}
+                    onVote={(value, weight) => handleVote(activeScope, key, value, weight)}
+                    onRemoveVote={(value) => handleRemoveVote(activeScope, key, value)}
+                  />
+                </div>
+              ))}
+              {!configSchema && (
+                <p className="text-sm text-[rgb(206_189_156_/_0.4)]">Carregando opções…</p>
+              )}
+            </div>
+          </div>
+        </main>
+
+        {/* ── RIGHT PANEL ── */}
+        <aside className="flex w-56 shrink-0 flex-col gap-4 overflow-y-auto border-l border-[rgb(190_153_81_/_0.15)] px-4 py-5">
+
+          {/* Tesouro */}
+          <div>
+            <div className="flex flex-col items-center rounded-xl border border-[rgb(190_153_81_/_0.25)] bg-[rgb(255_255_255_/_0.04)] p-3 transition-shadow duration-500" style={{ boxShadow: treasuryGlow }}>
+              <div className="mb-2 flex items-center gap-1.5">
+                <span className="dev-panel-section-label">Tesouro</span>
+                <HelpTooltip text="Pontos disponíveis para votar neste turno. Gaste com sabedoria — votos em opções mais distantes do padrão custam mais." />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-4xl font-bold tabular-nums text-[rgb(239_223_187)]">{pointsRemaining}</span>
+                <Coins className="h-6 w-6 shrink-0 text-[rgb(214_178_97)]" strokeWidth={1.5} />
+              </div>
+              {(votingState?.turnDeadline ?? 0) > 0 && (
+                <div className={`mt-2 flex items-center gap-1.5 font-mono text-lg font-bold tabular-nums ${timeColor}`}>
+                  <Hourglass className="h-4 w-4 shrink-0" strokeWidth={1.5} />
+                  {formatCountdown(timeLeftMs)}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Conselho */}
+          {displayPlayers.length > 0 && (
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="dev-panel-section-label">Conselho</span>
+                <HelpTooltip text="Jogadores na partida. Quando todos encerrarem o turno, os votos são contabilizados e as configurações decididas." />
+                <span className="ml-auto tabular-nums text-xs text-[rgb(214_178_97_/_0.7)]">
+                  {votingState?.readyToEndCount ?? 0}/{votingState?.totalPlayers ?? displayPlayers.length}
+                </span>
+              </div>
+              <ul className="mt-2 space-y-1.5">
+                {displayPlayers.map((p, i) => {
+                  const isMe = p.id === myId;
+                  const isSealed = iReadyToEnd && isMe;
+                  return (
+                    <li
+                      key={p.id}
+                      className={`flex cursor-pointer items-center gap-2 rounded-lg px-1.5 py-1.5 border transition-all duration-100 hover:brightness-125 ${
+                        isMe ? "border-[rgb(214_178_97_/_0.55)]" : isSealed ? "border-[rgb(79_141_107_/_0.45)]" : "border-[rgb(255_255_255_/_0.05)]"
+                      } ${isSealed ? "bg-[rgb(79_141_107_/_0.1)]" : "bg-[rgb(255_255_255_/_0.03)]"}`}
+                      onClick={() => { setActiveScope({ playerId: p.id }); setActiveArea("jogador"); }}
+                    >
+                      <PlayerPip index={i} total={displayPlayers.length} nickname={p.nickname} sealed={isSealed} size="lg" />
+                      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                        <div className="flex items-center gap-1.5">
+                          <span className="truncate text-sm font-semibold leading-none text-white">{p.nickname}</span>
+                          {isMe && (
+                            <span className="shrink-0 rounded bg-[rgb(214_178_97_/_0.18)] px-1 py-px text-[0.625rem] font-bold uppercase tracking-wide text-[rgb(214_178_97)]">
+                              você
+                            </span>
+                          )}
+                        </div>
+                        {isSealed
+                          ? <span className="text-[0.6875rem] leading-none text-[rgb(163_212_182_/_0.8)]">Encerrou votação</span>
+                          : <span className="text-[0.6875rem] leading-none text-[rgb(206_189_156_/_0.4)]">Votando…</span>
+                        }
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+
+          {/* Seus votos */}
+          {myVotes.length > 0 && (
+            <div>
+              <span className="dev-panel-section-label">Seus votos</span>
+              <ul className="mt-2 space-y-1 text-xs text-[rgb(206_189_156_/_0.6)]">
+                {myVotes.map((v, i) => {
+                  const scopeLabel = v.scope === "match" ? "Partida" : players.find((p) => p.id === (v.scope as { playerId: string }).playerId)?.nickname ?? "?";
+                  const fieldLabel = configSchema
+                    ? ((v.scope === "match" ? configSchema.matchConfig : configSchema.playerConfig)[v.field]?.label ?? v.field)
+                    : v.field;
+                  return (
+                    <li key={i} className="flex justify-between gap-1 rounded bg-[rgb(255_255_255_/_0.03)] px-2 py-1">
+                      <span className="truncate">{scopeLabel} · {fieldLabel}</span>
+                      <span className="shrink-0 tabular-nums text-[rgb(214_178_97_/_0.7)]">{v.weight}pt</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+
+          {/* Finalizar votação */}
+          <div className="mt-auto pt-2">
+            {votingState?.phase === "playing" && (
               <button
                 type="button"
                 onClick={handleEndTurn}
                 disabled={iReadyToEnd}
-                className="inline-flex items-center gap-2 rounded-xl border border-[rgb(190_153_81_/_0.45)] bg-[rgb(23_47_76_/_0.7)] px-5 py-2.5 text-sm font-semibold text-[rgb(237_210_148_/_0.9)] transition-all duration-150 hover:not-disabled:brightness-110 hover:not-disabled:-translate-y-px disabled:cursor-default disabled:opacity-60"
+                className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-[rgba(255,234,180,0.65)] bg-gradient-to-b from-[rgb(214_178_97)] to-[rgb(172_130_38)] px-3 py-2.5 text-sm font-medium text-[rgb(12_26_44)] shadow-[0_2px_12px_rgb(184_138_45_/_0.35)] transition-all duration-150 hover:not-disabled:brightness-110 hover:not-disabled:-translate-y-px disabled:cursor-default disabled:opacity-50"
               >
-                <Flag className="h-4 w-4 shrink-0" />
-                Finalizar turno {currentTurn}
-                {votingState.totalPlayers > 1 && (
-                  <span className="rounded-full border border-[rgb(190_153_81_/_0.4)] bg-[rgb(11_25_44_/_0.6)] px-2 py-0.5 text-xs tabular-nums text-[rgb(214_178_97_/_0.8)]">
+                <Flag className="btn-flag-icon h-4 w-4 shrink-0" strokeWidth={2} />
+                Finalizar votação
+                {(votingState.totalPlayers > 1) && (
+                  <span className="rounded-full border border-[rgb(12_26_44_/_0.25)] bg-[rgb(12_26_44_/_0.15)] px-1.5 py-0.5 text-xs tabular-nums text-[rgb(12_26_44_/_0.8)]">
                     {votingState.readyToEndCount}/{votingState.totalPlayers}
                   </span>
                 )}
               </button>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        </aside>
       </div>
     </>
   );
