@@ -27,7 +27,7 @@ import { GameOverScreen } from "@/components/game/GameOverScreen";
 // ---------------------------------------------------------------------------
 
 type GameSession = {
-  config: { turns: number; pointsPerTurn: number; turnDurationSeconds: number };
+  config?: { turns: number; pointsPerTurn: number; turnDurationSeconds: number } | null;
   isHost: boolean;
   nickname: string;
 };
@@ -188,6 +188,15 @@ export function GamePage({ code }: { code: string }) {
 
   if (!sessionReady || !session) return null;
 
+  // Wait for first voting_state from server (covers null session.config and race conditions)
+  if (!votingState) {
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <div className="text-sm text-[rgb(206_189_156_/_0.6)]">Conectando à partida…</div>
+      </div>
+    );
+  }
+
   // Game over
   if (votingState?.phase === "game_over") {
     return (
@@ -217,12 +226,12 @@ export function GamePage({ code }: { code: string }) {
       typeof entry[1] === "object" && entry[1] !== null && "type" in entry[1],
     );
 
-  const mySpent = votingState ? (votingState.spendByVoter[myId ?? ""] ?? 0) : 0;
-  const pointsPerTurn = votingState?.pointsPerTurn ?? session.config.pointsPerTurn;
+  const mySpent = votingState.spendByVoter[myId ?? ""] ?? 0;
+  const pointsPerTurn = votingState.pointsPerTurn;
   const pointsRemaining = pointsPerTurn - mySpent;
-  const currentTurn = votingState?.currentTurn ?? 1;
-  const totalTurns = votingState?.totalTurns ?? session.config.turns;
-  const durationMs = session.config.turnDurationSeconds * 1000;
+  const currentTurn = votingState.currentTurn;
+  const totalTurns = votingState.totalTurns;
+  const durationMs = votingState.turnDurationSeconds * 1000;
   const timePct = durationMs > 0 ? timeLeftMs / durationMs : 1;
   const timeColor = timePct < 0.2 ? "text-[rgb(220_80_70)]" : timePct < 0.5 ? "text-[rgb(220_170_60)]" : "text-[rgb(239_223_187)]";
   const treasuryGlow = (votingState?.turnDeadline ?? 0) > 0

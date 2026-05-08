@@ -124,6 +124,7 @@ export type VotingState = {
   currentTurn: number;
   totalTurns: number;
   pointsPerTurn: number;
+  turnDurationSeconds: number;
   // UTC ms deadline for current turn (0 when not in playing phase)
   turnDeadline: number;
   // UTC ms deadline for between-turns countdown (0 when not in between_turns phase)

@@ -517,6 +517,7 @@ export default class LobbyServer implements Party.Server {
       currentTurn: this.currentTurn,
       totalTurns: this.config.turns,
       pointsPerTurn: this.config.pointsPerTurn,
+      turnDurationSeconds: this.config.turnDurationSeconds,
       turnDeadline: this.gamePhase === "playing" ? this.turnDeadline : 0,
       betweenTurnsDeadline: this.gamePhase === "between_turns" ? this.betweenTurnsDeadline : 0,
       spendByVoter: ledger?.spendByVoter ?? {},
