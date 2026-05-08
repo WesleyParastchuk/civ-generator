@@ -103,6 +103,7 @@ export function GamePage({ code }: { code: string }) {
   const [timeLeftMs, setTimeLeftMs] = useState(0);
 
   const joinSentRef = useRef(false);
+  const socketOpenRef = useRef(false);
 
   // Read session from sessionStorage (client-side only — avoids SSR hydration mismatch)
   useEffect(() => {
@@ -145,6 +146,7 @@ export function GamePage({ code }: { code: string }) {
     host: process.env.NEXT_PUBLIC_PARTYKIT_HOST!,
     room: code,
     onOpen() {
+      socketOpenRef.current = true;
       if (joinSentRef.current || !session) return;
       joinSentRef.current = true;
       socket.send(JSON.stringify({
@@ -164,6 +166,16 @@ export function GamePage({ code }: { code: string }) {
       }
     },
   });
+
+  // Send join when session loads and socket is already open (covers the race where onOpen fired first)
+  useEffect(() => {
+    if (!session || joinSentRef.current || !socketOpenRef.current) return;
+    joinSentRef.current = true;
+    socket.send(JSON.stringify({
+      type: "join",
+      payload: { nickname: session.nickname, isHost: session.isHost },
+    } satisfies ClientMessage));
+  }, [session]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const sendMsg = (msg: ClientMessage) => socket.send(JSON.stringify(msg));
   const handleVote = (scope: VoteScope, field: string, value: string | number | boolean, weight: number) =>
