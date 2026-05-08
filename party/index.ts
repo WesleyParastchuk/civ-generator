@@ -82,18 +82,21 @@ export default class LobbyServer implements Party.Server {
     const msg = JSON.parse(message) as ClientMessage;
 
     if (msg.type === "join") {
-      if (this.gamePhase !== "lobby") {
+      if (this.gamePhase === "game_over") {
         const denied: ServerMessage = { type: "room_expired" };
         sender.send(JSON.stringify(denied));
-        sender.close();
         return;
       }
       const { nickname, isHost, config } = msg.payload;
-      if (isHost && config) this.config = config;
+      if (isHost && config && this.gamePhase === "lobby") this.config = config;
       this.players.set(sender.id, { nickname, ready: false, isHost });
       const welcome: ServerMessage = { type: "welcome", payload: { connectionId: sender.id } };
       sender.send(JSON.stringify(welcome));
       this.broadcast();
+      if (this.gamePhase !== "lobby") {
+        const stateMsg = this.buildVotingStateMsg();
+        if (stateMsg) sender.send(JSON.stringify(stateMsg));
+      }
 
     } else if (msg.type === "update_config") {
       const player = this.players.get(sender.id);
