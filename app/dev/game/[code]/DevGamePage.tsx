@@ -46,6 +46,7 @@ const DEV_FALLBACK_VOTING_STATE: VotingState = {
   currentTurn: 1,
   totalTurns: DEV_SESSION.config.turns,
   pointsPerTurn: DEV_SESSION.config.pointsPerTurn,
+  turnDurationSeconds: DEV_SESSION.config.turnDurationSeconds,
   turnDeadline: Date.now() + DEV_SESSION.config.turnDurationSeconds * 1000,
   betweenTurnsDeadline: 0,
   spendByVoter: {},
