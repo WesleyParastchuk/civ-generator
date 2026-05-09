@@ -1,9 +1,22 @@
 import { HexCoord } from './HexCoord';
 import { HexTile } from './HexTile';
 import { Terrain } from './types';
+import { PlayerContext } from './PlayerContext';
+import { HistoryManager } from './HistoryManager';
+import { Action } from './Action';
 
 export class GameMap {
   hexes: Map<string, HexTile> = new Map();
+  playerContext: PlayerContext = new PlayerContext();
+  history: HistoryManager = new HistoryManager();
+
+  perform(action: Action): void {
+    this.history.push(action, this);
+  }
+
+  undo(): boolean {
+    return this.history.undo(this) !== null;
+  }
 
   getTile(coord: HexCoord): HexTile | undefined {
     return this.hexes.get(coord.key());
