@@ -42,34 +42,43 @@ export class Wonder extends Placement {
   constructor(readonly type: WonderType) { super(); }
 
   get data(): WonderData { return WONDER_DATA[this.type]; }
-  get name(): string { return ConfigStore.getItem('wonder', this.type).label ?? this.data.name; }
+  private cfgItem() { return ConfigStore.getList('wonder').find(i => i.key === this.type); }
+  get name(): string { return this.cfgItem()?.label ?? this.data.name; }
   get era(): string { return this.data.era; }
-  get color(): string { return ConfigStore.getItem('wonder', this.type).color ?? this.data.color; }
+  get color(): string { return this.cfgItem()?.color ?? this.data.color; }
 
   get requirements(): Requirement[] {
     return [new RequireNoExistingPlacement(), new RequireNotWater(), ...this.data.extraReqs];
   }
 
   getEffect(_tile: HexTile, _map: GameMap): Stats {
-    const base = this.data.effect.clone();
-    const ov = ConfigStore.getItem('wonder', this.type).yields;
-    if (!ov) return base;
-    return Stats.of({
-      food:       ov.food       ?? base.food,
-      production: ov.production ?? base.production,
-      science:    ov.science    ?? base.science,
-      gold:       ov.gold       ?? base.gold,
-      culture:    ov.culture    ?? base.culture,
-      faith:      ov.faith      ?? base.faith,
-      housing:    ov.housing    ?? base.housing,
-      amenities:  ov.amenities  ?? base.amenities,
-      appeal:     ov.appeal     ?? base.appeal,
-    });
+    const item = this.cfgItem();
+    if (item && Object.keys(item.yields).length > 0) return Stats.of(item.yields);
+    return this.data.effect.clone();
+  }
+}
+
+export class GenericWonder extends Placement {
+  constructor(readonly key: string) { super(); }
+
+  private cfgItem() { return ConfigStore.getList('wonder').find(i => i.key === this.key); }
+  get name(): string { return this.cfgItem()?.label ?? this.key; }
+  get color(): string { return this.cfgItem()?.color ?? '#ffffff'; }
+
+  readonly requirements: Requirement[] = [new RequireNoExistingPlacement(), new RequireNotWater()];
+
+  getEffect(_tile: HexTile, _map: GameMap): Stats {
+    const item = this.cfgItem();
+    if (!item) return Stats.zero();
+    return Stats.of(item.yields);
   }
 }
 
 export class WonderFactory {
-  static create(type: WonderType): Wonder { return new Wonder(type); }
+  static create(key: string): Wonder | GenericWonder {
+    if (Object.values(WonderType).includes(key as WonderType)) return new Wonder(key as WonderType);
+    return new GenericWonder(key);
+  }
   static all(): Wonder[] {
     return Object.values(WonderType).map(t => new Wonder(t as WonderType));
   }

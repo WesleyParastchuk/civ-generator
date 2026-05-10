@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { ToolId, Terrain, Feature, Resource, DistrictType, WonderType } from '@/lib/civ/types';
+import { ToolId } from '@/lib/civ/types';
 import { getSubMenuItems, SubMenuItem } from './subMenuItems';
 
 const PAGE_SIZE = 9;
@@ -9,7 +9,7 @@ const PAGE_SIZE = 9;
 interface Props {
   toolId: ToolId;
   page: number;
-  onSelect: (payload: Terrain | Feature | Resource | DistrictType | WonderType) => void;
+  onSelect: (payload: string) => void;
   onPageChange: (page: number) => void;
   onClose: () => void;
 }

@@ -3,23 +3,8 @@ import { HexEdge } from './HexEdge';
 import { Stats } from './Stats';
 import { Placement } from './Placement';
 import { Terrain, Feature, Resource, isHills, isWater } from './types';
-import { ConfigStore, ItemConfig } from './ConfigStore';
+import { ConfigStore } from './ConfigStore';
 import type { GameMap } from './GameMap';
-
-function mergeYields(base: Stats, ov: ItemConfig['yields']): Stats {
-  if (!ov) return base;
-  return Stats.of({
-    food:       ov.food       ?? base.food,
-    production: ov.production ?? base.production,
-    science:    ov.science    ?? base.science,
-    gold:       ov.gold       ?? base.gold,
-    culture:    ov.culture    ?? base.culture,
-    faith:      ov.faith      ?? base.faith,
-    housing:    ov.housing    ?? base.housing,
-    amenities:  ov.amenities  ?? base.amenities,
-    appeal:     ov.appeal     ?? base.appeal,
-  });
-}
 
 export const TERRAIN_BASE: Record<Terrain, Stats> = {
   [Terrain.Fog]:            Stats.zero(),
@@ -88,14 +73,14 @@ export const RESOURCE_BASE: Record<Resource, Stats> = {
 
 export class HexTile {
   readonly coord: HexCoord;
-  terrain: Terrain;
-  feature: Feature = Feature.None;
-  resource: Resource = Resource.None;
+  terrain: string;
+  feature: string = Feature.None;
+  resource: string = Resource.None;
   placement: Placement | null = null;
   edges: HexEdge[] = Array.from({ length: 6 }, () => new HexEdge());
   hasFreshWater: boolean = false;
 
-  constructor(coord: HexCoord, terrain: Terrain = Terrain.Fog) {
+  constructor(coord: HexCoord, terrain: string = Terrain.Fog) {
     this.coord = coord;
     this.terrain = terrain;
   }
@@ -109,9 +94,15 @@ export class HexTile {
   get appeal(): number { return this.getBaseStats().appeal; }
 
   getBaseStats(): Stats {
-    return mergeYields(TERRAIN_BASE[this.terrain], ConfigStore.getItem('terrain', this.terrain).yields).clone()
-      .add(mergeYields(FEATURE_BASE[this.feature], ConfigStore.getItem('feature', this.feature).yields))
-      .add(mergeYields(RESOURCE_BASE[this.resource], ConfigStore.getItem('resource', this.resource).yields));
+    const lookup = (cat: 'terrain' | 'feature' | 'resource', key: string, fallback: Stats): Stats => {
+      const list = ConfigStore.getList(cat);
+      if (list.length === 0) return fallback.clone();
+      const item = list.find(i => i.key === key);
+      return item ? Stats.of(item.yields) : Stats.zero();
+    };
+    return lookup('terrain', this.terrain, (TERRAIN_BASE as Record<string, Stats>)[this.terrain] ?? Stats.zero())
+      .add(lookup('feature', this.feature, (FEATURE_BASE as Record<string, Stats>)[this.feature] ?? Stats.zero()))
+      .add(lookup('resource', this.resource, (RESOURCE_BASE as Record<string, Stats>)[this.resource] ?? Stats.zero()));
   }
 
   getFinalStats(map: GameMap): Stats {
