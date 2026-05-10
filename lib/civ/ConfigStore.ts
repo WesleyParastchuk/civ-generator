@@ -1,34 +1,28 @@
-import { Terrain, Feature, Resource, DistrictType, WonderType } from './types';
-
-export interface ItemConfig {
-  label?: string;
-  color?: string;
-  icon?: string; // base64 data URL (starts with "data:") or single emoji char
-  yields?: {
-    food?: number;
-    production?: number;
-    science?: number;
-    gold?: number;
-    culture?: number;
-    faith?: number;
-    housing?: number;
-    amenities?: number;
-    appeal?: number;
+export interface ConfigItem {
+  key: string;
+  label: string;
+  color: string;
+  icon?: string;
+  yields: {
+    food?: number; production?: number; science?: number; gold?: number;
+    culture?: number; faith?: number; housing?: number; amenities?: number; appeal?: number;
   };
+  enabled: boolean;
+  isCustom: boolean;
 }
 
 export interface AppConfig {
-  terrain:  Partial<Record<Terrain,      ItemConfig>>;
-  feature:  Partial<Record<Feature,      ItemConfig>>;
-  resource: Partial<Record<Resource,     ItemConfig>>;
-  district: Partial<Record<DistrictType, ItemConfig>>;
-  wonder:   Partial<Record<WonderType,   ItemConfig>>;
+  terrain:  ConfigItem[];
+  feature:  ConfigItem[];
+  resource: ConfigItem[];
+  district: ConfigItem[];
+  wonder:   ConfigItem[];
 }
 
 export type ConfigCategory = keyof AppConfig;
 
 const STORAGE_KEY = 'civ-config';
-const EMPTY: AppConfig = { terrain: {}, feature: {}, resource: {}, district: {}, wonder: {} };
+const EMPTY: AppConfig = { terrain: [], feature: [], resource: [], district: [], wonder: [] };
 
 const listeners = new Set<() => void>();
 
@@ -39,11 +33,11 @@ function load(): AppConfig {
     if (!raw) return { ...EMPTY };
     const parsed = JSON.parse(raw) as Partial<AppConfig>;
     return {
-      terrain:  parsed.terrain  ?? {},
-      feature:  parsed.feature  ?? {},
-      resource: parsed.resource ?? {},
-      district: parsed.district ?? {},
-      wonder:   parsed.wonder   ?? {},
+      terrain:  Array.isArray(parsed.terrain)  ? parsed.terrain  : [],
+      feature:  Array.isArray(parsed.feature)  ? parsed.feature  : [],
+      resource: Array.isArray(parsed.resource) ? parsed.resource : [],
+      district: Array.isArray(parsed.district) ? parsed.district : [],
+      wonder:   Array.isArray(parsed.wonder)   ? parsed.wonder   : [],
     };
   } catch {
     return { ...EMPTY };
@@ -57,32 +51,35 @@ function persist(config: AppConfig): void {
 }
 
 export class ConfigStore {
-  static get(): AppConfig {
-    return load();
+  static getList(cat: ConfigCategory): ConfigItem[] {
+    return load()[cat];
   }
 
-  static getItem(cat: ConfigCategory, key: string): ItemConfig {
+  static setList(cat: ConfigCategory, items: ConfigItem[]): void {
     const config = load();
-    return (config[cat] as Record<string, ItemConfig>)[key] ?? {};
-  }
-
-  static setItem(cat: ConfigCategory, key: string, patch: Partial<ItemConfig>): void {
-    const config = load();
-    const existing = (config[cat] as Record<string, ItemConfig>)[key] ?? {};
-    const mergedYields = patch.yields !== undefined
-      ? { ...existing.yields, ...patch.yields }
-      : existing.yields;
-    (config[cat] as Record<string, ItemConfig>)[key] = {
-      ...existing,
-      ...patch,
-      ...(mergedYields !== undefined ? { yields: mergedYields } : {}),
-    };
+    config[cat] = items;
     persist(config);
   }
 
-  static resetItem(cat: ConfigCategory, key: string): void {
+  static updateItem(cat: ConfigCategory, key: string, patch: Partial<ConfigItem>): void {
     const config = load();
-    delete (config[cat] as Record<string, ItemConfig>)[key];
+    const idx = config[cat].findIndex(i => i.key === key);
+    if (idx === -1) return;
+    config[cat][idx] = { ...config[cat][idx], ...patch };
+    persist(config);
+  }
+
+  static addCustomItem(cat: ConfigCategory, item: Omit<ConfigItem, 'isCustom'>): void {
+    const config = load();
+    config[cat].push({ ...item, isCustom: true });
+    persist(config);
+  }
+
+  static removeCustomItem(cat: ConfigCategory, key: string): void {
+    const config = load();
+    const item = config[cat].find(i => i.key === key);
+    if (!item?.isCustom) return;
+    config[cat] = config[cat].filter(i => i.key !== key);
     persist(config);
   }
 

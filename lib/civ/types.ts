@@ -210,16 +210,16 @@ export const RESOURCE_COLOR: Record<Resource, string> = {
   [Resource.Uranium]:   '#7f8c8d',
 };
 
-export function isHills(t: Terrain): boolean {
+export function isHills(t: string): boolean {
   return t === Terrain.GrasslandHills || t === Terrain.PlainsHills ||
          t === Terrain.DesertHills || t === Terrain.TundraHills ||
          t === Terrain.SnowHills;
 }
 
-export function isWater(t: Terrain): boolean {
+export function isWater(t: string): boolean {
   return t === Terrain.Ocean || t === Terrain.Coast;
 }
 
-export function isImpassable(t: Terrain): boolean {
+export function isImpassable(t: string): boolean {
   return t === Terrain.Mountain;
 }

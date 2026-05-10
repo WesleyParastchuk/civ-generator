@@ -1,7 +1,7 @@
 import { HexCoord } from './HexCoord';
 import { HexTile } from './HexTile';
 import { GameMap } from './GameMap';
-import { Terrain, Feature, Resource } from './types';
+import { Terrain } from './types';
 import { Placement } from './Placement';
 
 export interface Action {
@@ -12,8 +12,8 @@ export interface Action {
 
 export class SetTerrainAction implements Action {
   readonly description: string;
-  private prev?: Terrain;
-  constructor(readonly coord: HexCoord, readonly next: Terrain) {
+  private prev?: string;
+  constructor(readonly coord: HexCoord, readonly next: string) {
     this.description = `Terreno → ${next}`;
   }
   apply(map: GameMap): void {
@@ -30,8 +30,8 @@ export class SetTerrainAction implements Action {
 
 export class SetFeatureAction implements Action {
   readonly description: string;
-  private prev?: Feature;
-  constructor(readonly coord: HexCoord, readonly next: Feature) {
+  private prev?: string;
+  constructor(readonly coord: HexCoord, readonly next: string) {
     this.description = `Característica → ${next}`;
   }
   apply(map: GameMap): void {
@@ -48,8 +48,8 @@ export class SetFeatureAction implements Action {
 
 export class SetResourceAction implements Action {
   readonly description: string;
-  private prev?: Resource;
-  constructor(readonly coord: HexCoord, readonly next: Resource) {
+  private prev?: string;
+  constructor(readonly coord: HexCoord, readonly next: string) {
     this.description = `Recurso → ${next}`;
   }
   apply(map: GameMap): void {
@@ -100,9 +100,9 @@ export class CreateTileAction implements Action {
 
 export class FogActivateAction implements Action {
   readonly description: string;
-  private prevTerrain?: Terrain;
+  private prevTerrain?: string;
   private spawnedKeys: string[] = [];
-  constructor(readonly coord: HexCoord, readonly nextTerrain: Terrain) {
+  constructor(readonly coord: HexCoord, readonly nextTerrain: string) {
     this.description = `Ativar névoa → ${nextTerrain}`;
   }
   apply(map: GameMap): void {

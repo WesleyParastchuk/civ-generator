@@ -3,7 +3,7 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { GameMap } from '@/lib/civ/GameMap';
 import { HexCoord } from '@/lib/civ/HexCoord';
-import { ToolId, Terrain, Feature, Resource, DistrictType, WonderType } from '@/lib/civ/types';
+import { ToolId, Terrain, Feature, Resource } from '@/lib/civ/types';
 import {
   SetTerrainAction, SetFeatureAction, SetResourceAction, SetPlacementAction,
   FogActivateAction,
@@ -22,11 +22,11 @@ export type ToolState =
   | { id: ToolId.Pan }
   | { id: ToolId.Erase }
   | { id: ToolId.Fog }
-  | { id: ToolId.Terrain;  payload: Terrain }
-  | { id: ToolId.Feature;  payload: Feature }
-  | { id: ToolId.Resource; payload: Resource }
-  | { id: ToolId.District; payload: DistrictType }
-  | { id: ToolId.Wonder;   payload: WonderType }
+  | { id: ToolId.Terrain;  payload: string }
+  | { id: ToolId.Feature;  payload: string }
+  | { id: ToolId.Resource; payload: string }
+  | { id: ToolId.District; payload: string }
+  | { id: ToolId.Wonder;   payload: string }
   | { id: ToolId.River };
 
 type SubMenuState = { toolId: ToolId; page: number };
@@ -108,15 +108,15 @@ export function MapEditor() {
     bump();
   }, [tool, bump]);
 
-  const onSubMenuSelect = useCallback((payload: Terrain | Feature | Resource | DistrictType | WonderType) => {
+  const onSubMenuSelect = useCallback((payload: string) => {
     const sm = subMenuRef.current;
     if (!sm) return;
     switch (sm.toolId) {
-      case ToolId.Terrain:  setTool({ id: ToolId.Terrain,  payload: payload as Terrain });      break;
-      case ToolId.Feature:  setTool({ id: ToolId.Feature,  payload: payload as Feature });      break;
-      case ToolId.Resource: setTool({ id: ToolId.Resource, payload: payload as Resource });     break;
-      case ToolId.District: setTool({ id: ToolId.District, payload: payload as DistrictType }); break;
-      case ToolId.Wonder:   setTool({ id: ToolId.Wonder,   payload: payload as WonderType });   break;
+      case ToolId.Terrain:  setTool({ id: ToolId.Terrain,  payload }); break;
+      case ToolId.Feature:  setTool({ id: ToolId.Feature,  payload }); break;
+      case ToolId.Resource: setTool({ id: ToolId.Resource, payload }); break;
+      case ToolId.District: setTool({ id: ToolId.District, payload }); break;
+      case ToolId.Wonder:   setTool({ id: ToolId.Wonder,   payload }); break;
     }
     setSubMenu(null);
   }, []);

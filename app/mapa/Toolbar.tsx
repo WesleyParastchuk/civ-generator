@@ -2,6 +2,7 @@
 
 import { TOOLS, ToolDef } from './shortcuts';
 import { ToolId, Terrain, Feature, Resource, DistrictType, WonderType } from '@/lib/civ/types';
+// Default payloads are string enum values which satisfy payload: string
 import type { ToolState } from './MapEditor';
 
 interface Props {

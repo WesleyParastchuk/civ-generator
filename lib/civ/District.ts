@@ -37,14 +37,20 @@ export const DISTRICT_META: Record<DistrictType, DistrictMeta> = {
 };
 
 export abstract class District extends Placement {
-  abstract readonly type: DistrictType;
+  abstract readonly type: string;
   buildings: Building[] = [];
 
-  get meta(): DistrictMeta { return DISTRICT_META[this.type]; }
-  get name(): string { return ConfigStore.getItem('district', this.type).label ?? this.meta.name; }
-  get color(): string { return ConfigStore.getItem('district', this.type).color ?? this.meta.color; }
-  get abbr(): string { return this.meta.abbr; }
-  get availableBuildings(): BuildingType[] { return this.meta.buildings; }
+  get meta(): DistrictMeta { return DISTRICT_META[this.type as DistrictType]; }
+  get name(): string {
+    const item = ConfigStore.getList('district').find(i => i.key === this.type);
+    return item?.label ?? this.meta?.name ?? this.type;
+  }
+  get color(): string {
+    const item = ConfigStore.getList('district').find(i => i.key === this.type);
+    return item?.color ?? this.meta?.color ?? '#888888';
+  }
+  get abbr(): string { return this.meta?.abbr ?? this.type.slice(0, 2).toUpperCase(); }
+  get availableBuildings(): BuildingType[] { return this.meta?.buildings ?? []; }
 
   addBuilding(type: BuildingType): boolean {
     if (!this.availableBuildings.includes(type)) return false;
@@ -76,8 +82,8 @@ export abstract class District extends Placement {
 
   getEffect(tile: HexTile, map: GameMap): Stats {
     const s = this.buildingsStats().add(this.getAdjacencyBonus(tile, map));
-    const ov = ConfigStore.getItem('district', this.type).yields;
-    if (ov) s.add(Stats.of(ov));
+    const item = ConfigStore.getList('district').find(i => i.key === this.type);
+    if (item && Object.keys(item.yields).length > 0) s.add(Stats.of(item.yields));
     return s;
   }
 }
@@ -160,7 +166,7 @@ export class Harbor extends District { readonly type = DistrictType.Harbor;
 export class Encampment extends District { readonly type = DistrictType.Encampment;
   getAdjacencyBonus(tile: HexTile, map: GameMap): Stats {
     const ns = map.neighbors(tile.coord);
-    const strategic = new Set<Resource>([Resource.Horses, Resource.Iron, Resource.Niter, Resource.Coal, Resource.Oil, Resource.Aluminum, Resource.Uranium]);
+    const strategic = new Set<string>([Resource.Horses, Resource.Iron, Resource.Niter, Resource.Coal, Resource.Oil, Resource.Aluminum, Resource.Uranium]);
     let p = ns.filter(n => strategic.has(n.resource)).length;
     p += Math.floor(ns.filter(n => n.placement instanceof District && !(n.placement instanceof CityCenter)).length / 2);
     return Stats.of({ production: p });
@@ -229,9 +235,15 @@ export class GovernmentPlaza extends District { readonly type = DistrictType.Gov
   }
 }
 
+export class GenericDistrict extends District {
+  readonly type: string;
+  constructor(key: string) { super(); this.type = key; }
+  getAdjacencyBonus(): Stats { return Stats.zero(); }
+}
+
 export class DistrictFactory {
-  static create(type: DistrictType): District {
-    switch (type) {
+  static create(key: string): District {
+    switch (key as DistrictType) {
       case DistrictType.CityCenter:           return new CityCenter();
       case DistrictType.Campus:               return new Campus();
       case DistrictType.CommercialHub:        return new CommercialHub();
@@ -247,10 +259,11 @@ export class DistrictFactory {
       case DistrictType.Aerodrome:            return new Aerodrome();
       case DistrictType.Spaceport:            return new Spaceport();
       case DistrictType.GovernmentPlaza:      return new GovernmentPlaza();
+      default:                                return new GenericDistrict(key);
     }
   }
 
   static all(): District[] {
-    return Object.values(DistrictType).map(t => DistrictFactory.create(t as DistrictType));
+    return Object.values(DistrictType).map(t => DistrictFactory.create(t));
   }
 }
