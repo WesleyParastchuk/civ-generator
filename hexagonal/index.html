@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Civ Architect - Prototipador</title>
+    <style>
+        :root {
+            --bg-deep: #0f0f12;
+            --panel-bg: rgba(25, 25, 30, 0.9);
+            --accent: #bb86fc;
+            --border: rgba(255,255,255,0.1);
+        }
+
+        body, html { margin: 0; padding: 0; overflow: hidden; background: var(--bg-deep); font-family: 'Inter', sans-serif; color: #e0e0e0; }
+        
+        /* Nav Bar Estilo Excalidraw */
+        .navbar {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            background: var(--panel-bg); backdrop-filter: blur(10px);
+            padding: 8px; border-radius: 10px; border: 1px solid var(--border);
+            display: flex; gap: 8px; z-index: 100; box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        }
+
+        .tool-btn {
+            width: 40px; height: 40px; border: none; border-radius: 6px;
+            background: transparent; color: #a0a0a0; cursor: pointer;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: all 0.2s; position: relative;
+        }
+
+        .tool-btn:hover { background: rgba(255,255,255,0.05); color: #fff; }
+        .tool-btn.active { background: #6200ee; color: #fff; }
+        .tool-btn span { font-size: 10px; margin-top: 2px; opacity: 0.6; }
+
+        /* Painel Lateral */
+        .side-panel {
+            position: fixed; top: 20px; left: 20px;
+            background: var(--panel-bg); backdrop-filter: blur(10px);
+            padding: 15px; border-radius: 12px; border: 1px solid var(--border);
+            width: 200px; z-index: 10; pointer-events: none;
+        }
+
+        canvas { display: block; cursor: crosshair; }
+        .kbd-hint { font-size: 10px; color: var(--accent); font-family: monospace; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar" id="navbar">
+    <button class="tool-btn active" data-tool="1" title="Mudar Terreno">
+        ⛰️ <span>1</span>
+    </button>
+    <button class="tool-btn" data-tool="2" title="Distritos (Breve)">
+        🏛️ <span>2</span>
+    </button>
+    <button class="tool-btn" data-tool="3" title="Recursos (Breve)">
+        💎 <span>3</span>
+    </button>
+    <!-- Adicione de 4 a 0 conforme necessário -->
+</nav>
+
+<div class="side-panel">
+    <div style="color: var(--accent); font-weight: bold; margin-bottom: 5px;">CIV ARCHITECT</div>
+    <div id="hex-info" style="font-size: 12px; line-height: 1.6;">
+        Clique para começar...
+    </div>
+</div>
+
+<canvas id="canvas"></canvas>
+
+<script>
+    // --- MODELO DE DOMÍNIO ---
+    
+    class Stats {
+        constructor(food = 0, production = 0, gold = 0, science = 0, culture = 0, faith = 0, housing = 0, amenities = 0, appeal = 0) {
+            this.food = food; this.production = production; this.gold = gold;
+            this.science = science; this.culture = culture; this.faith = faith;
+            this.housing = housing; this.amenities = amenities; this.appeal = appeal;
+        }
+        add(other) {
+            this.food += other.food; this.production += other.production; this.gold += other.gold;
+            this.science += other.science; this.culture += other.culture; this.faith += other.faith;
+            this.housing += other.housing; this.amenities += other.amenities; this.appeal += other.appeal;
+            return this;
+        }
+        multiply(factor) {
+            this.food *= factor; this.production *= factor; this.gold *= factor;
+            this.science *= factor; this.culture *= factor; this.faith *= factor;
+            return this;
+        }
+    }
+
+    class HexEdge {
+        constructor() {
+            this.hasRiver = false;
+            this.hasCliff = false;
+        }
+    }
+
+    class HexTile {
+        constructor(q, r, terrain) {
+            this.q = q;
+            this.r = r;
+            this.coords = { q, r };
+            this.terrain = terrain;
+            this.feature = null;
+            this.resource = null;
+            this.placement = null;
+            this.improvement = null;
+            this.ownerCity = null;
+            this.isWorked = false;
+            this.edges = Array.from({ length: 6 }, () => new HexEdge());
+        }
+        getFinalYields() {
+            // Em uma versão futura será calculado a partir de modifications
+            return new Stats();
+        }
+    }
+
+    class City {
+        constructor(name, centerTile) {
+            this.name = name;
+            this.population = 1;
+            this.ownedTiles = [centerTile];
+            this.centerTile = centerTile;
+        }
+        getCityTotalStats() {
+            return new Stats(); // Placeholder
+        }
+        getRequiredAmenities() {
+            return Math.ceil(this.population / 2);
+        }
+    }
+
+    class Placement {
+        constructor(id) {
+            this.id = id;
+            this.placementReqs = [];
+            this.unlockReqs = [];
+        }
+        getAdjacencyBonus(currentHex) {
+            return new Stats(); // Placeholder
+        }
+    }
+
+    class District extends Placement {
+        constructor(id, type) {
+            super(id);
+            this.type = type;
+            this.buildings = [];
+            this.specialistSlots = 0;
+            this.adjacencyRules = [];
+        }
+    }
+
+    class Wonder extends Placement {
+        constructor(id) {
+            super(id);
+        }
+    }
+
+    class Improvement {
+        constructor(name) {
+            this.name = name;
+            this.baseBonus = new Stats();
+        }
+        canBeBuiltOn(tile) {
+            return true;
+        }
+    }
+
+    class AdjacencyRule {
+        constructor(targetType, bonusValue, yieldType, requiredCount = 1) {
+            this.targetType = targetType;
+            this.bonusValue = bonusValue;
+            this.yieldType = yieldType;
+            this.requiredCount = requiredCount;
+        }
+    }
+
+    class Modifier {
+        constructor(id, triggerRequirement, effect, scope) {
+            this.id = id;
+            this.triggerRequirement = triggerRequirement;
+            this.effect = effect;
+            this.scope = scope;
+        }
+    }
+
+    class ModifierEngine {
+        // Aplica e gerencia modificadores no PlayerContext
+    }
+
+    class PlayerContext {
+        constructor() {
+            this.civ = null;
+            this.government = null;
+            this.religion = null;
+            this.unlockedTechs = [];
+            this.unlockedCivics = [];
+            this.activePolicies = [];
+            this.modifierEngine = new ModifierEngine();
+            this.cities = [];
+        }
+    }
+
+    const TERRAIN_TYPES = {
+        EMPTY:     { name: 'Névoa', color: '#1a1a1e', stroke: '#333', food: 0, prod: 0, active: false },
+        GRASSLAND: { name: 'Grama', color: '#2d4c36', stroke: '#4e9a68', food: 2, prod: 0, active: true },
+        PLAINS:    { name: 'Planície', color: '#4d4a31', stroke: '#a39b61', food: 1, prod: 1, active: true },
+        DESERT:    { name: 'Deserto', color: '#5a4a2a', stroke: '#d4af37', food: 0, prod: 0, active: true },
+        TUNDRA:    { name: 'Tundra', color: '#3d4451', stroke: '#788ca1', food: 1, prod: 0, active: true },
+        MOUNTAIN:  { name: 'Montanha', color: '#2c2c2e', stroke: '#8e8e93', food: 0, prod: 0, active: true }
+    };
+
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const HEX_SIZE = 40;
+    
+    let camera = { x: window.innerWidth/2, y: window.innerHeight/2, zoom: 0.9 };
+    let hexes = new Map();
+    let currentTool = "1";
+    let isDragging = false;
+    let lastMouse = { x: 0, y: 0 };
+    let hasMoved = false;
+
+    function init() {
+        window.addEventListener('resize', resize);
+        window.addEventListener('keydown', handleKeys);
+        setupNav();
+        resize();
+        
+        // Hex inicial (Capital)
+        updateHex(0, 0, true);
+        requestAnimationFrame(render);
+    }
+
+    function setupNav() {
+        document.querySelectorAll('.tool-btn').forEach(btn => {
+            btn.onclick = () => selectTool(btn.dataset.tool);
+        });
+    }
+
+    function selectTool(toolId) {
+        currentTool = toolId;
+        document.querySelectorAll('.tool-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.tool === toolId);
+        });
+    }
+
+    function handleKeys(e) {
+        if (e.key >= '1' && e.key <= '9') selectTool(e.key);
+        if (e.key === '0') selectTool('10');
+    }
+
+    // Gerenciamento de Hexágonos (Refletindo o Diagrama de Classes)
+    function updateHex(q, r, forceActivate = false) {
+        const key = `${q},${r}`;
+        let hex = hexes.get(key);
+
+        if (!hex || (!TERRAIN_TYPES[hex.terrain].active && forceActivate)) {
+            hexes.set(key, new HexTile(q, r, 'GRASSLAND'));
+            expandFog(q, r);
+        } else if (currentTool === "1" && TERRAIN_TYPES[hex.terrain].active) {
+            const types = Object.keys(TERRAIN_TYPES).filter(t => TERRAIN_TYPES[t].active);
+            let idx = (types.indexOf(hex.terrain) + 1) % types.length;
+            hex.terrain = types[idx];
+        }
+
+        updateUI(q, r);
+    }
+
+    function expandFog(q, r) {
+        // Expande borda cinza num raio de 2 conforme solicitado
+        for (let dq = -2; dq <= 2; dq++) {
+            for (let dr = Math.max(-2, -dq - 2); dr <= Math.min(2, -dq + 2); dr++) {
+                const nk = `${q + dq},${r + dr}`;
+                if (!hexes.has(nk)) {
+                    hexes.set(nk, new HexTile(q + dq, r + dr, 'EMPTY'));
+                }
+            }
+        }
+    }
+
+    function updateUI(q, r) {
+        const hex = hexes.get(`${key = q + ',' + r}`);
+        if (!hex) return;
+        const data = TERRAIN_TYPES[hex.terrain];
+        document.getElementById('hex-info').innerHTML = `
+            <b style="color:white">${data.name}</b> (${q}, ${r})<br>
+            🍎 Alimento: ${data.food}<br>
+            🔨 Produção: ${data.prod}
+        `;
+    }
+
+    // --- RENDERIZAÇÃO ---
+
+    function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+
+    function hexToPixel(q, r) {
+        return {
+            x: HEX_SIZE * Math.sqrt(3) * (q + r / 2),
+            y: HEX_SIZE * 1.5 * r
+        };
+    }
+
+    function pixelToHex(x, y) {
+        const wx = (x - camera.x) / camera.zoom;
+        const wy = (y - camera.y) / camera.zoom;
+        const q = (Math.sqrt(3)/3 * wx - 1/3 * wy) / HEX_SIZE;
+        const r = (2/3 * wy) / HEX_SIZE;
+        return hexRound(q, r);
+    }
+
+    function hexRound(q, r) {
+        let s = -q - r;
+        let rq = Math.round(q), rr = Math.round(r), rs = Math.round(s);
+        const qd = Math.abs(rq - q), rd = Math.abs(rr - r), sd = Math.abs(rs - s);
+        if (qd > rd && qd > sd) rq = -rr - rs;
+        else if (rd > sd) rr = -rq - rs;
+        return { q: rq, r: rr };
+    }
+
+    function render() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.save();
+        ctx.translate(camera.x, camera.y);
+        ctx.scale(camera.zoom, camera.zoom);
+
+        hexes.forEach(h => {
+            const pos = hexToPixel(h.q, h.r);
+            const t = TERRAIN_TYPES[h.terrain];
+            
+            ctx.beginPath();
+            for (let i = 0; i < 6; i++) {
+                const ang = (Math.PI / 180) * (60 * i - 30);
+                ctx.lineTo(pos.x + HEX_SIZE * Math.cos(ang), pos.y + HEX_SIZE * Math.sin(ang));
+            }
+            ctx.closePath();
+            ctx.fillStyle = t.color;
+            ctx.fill();
+            ctx.strokeStyle = t.stroke;
+            ctx.lineWidth = t.active ? 1.5 : 0.5;
+            ctx.stroke();
+        });
+
+        ctx.restore();
+        requestAnimationFrame(render);
+    }
+
+    // --- INPUTS ---
+    canvas.onmousedown = (e) => { isDragging = true; hasMoved = false; lastMouse = { x: e.clientX, y: e.clientY }; };
+    window.onmousemove = (e) => {
+        if (!isDragging) return;
+        if (Math.abs(e.clientX - lastMouse.x) > 3) hasMoved = true;
+        camera.x += (e.clientX - lastMouse.x);
+        camera.y += (e.clientY - lastMouse.y);
+        lastMouse = { x: e.clientX, y: e.clientY };
+    };
+    window.onmouseup = (e) => {
+        if (!hasMoved) {
+            const coords = pixelToHex(e.clientX, e.clientY);
+            updateHex(coords.q, coords.r, true);
+        }
+        isDragging = false;
+    };
+    canvas.onwheel = (e) => {
+        e.preventDefault();
+        const oldZoom = camera.zoom;
+        camera.zoom = Math.min(Math.max(camera.zoom - e.deltaY * 0.001, 0.2), 3);
+        const ratio = camera.zoom / oldZoom;
+        camera.x = e.clientX - (e.clientX - camera.x) * ratio;
+        camera.y = e.clientY - (e.clientY - camera.y) * ratio;
+    };
+
+// --- SISTEMA DE HISTÓRICO ---
+const historyStack = [];
+const MAX_HISTORY = 25;
+
+function saveAction(q, r, oldTerrain, newlyCreatedKeys = []) {
+    const action = {
+        q,
+        r,
+        oldTerrain,
+        newlyCreatedKeys // Guardamos quais hexágonos de névoa foram criados para removê-los no undo
+    };
+
+    historyStack.push(action);
+    
+    // Mantém apenas os últimos 25
+    if (historyStack.length > MAX_HISTORY) {
+        historyStack.shift(); 
+    }
+}
+
+function undo() {
+    if (historyStack.length === 0) return;
+
+    const lastAction = historyStack.pop();
+    const key = `${lastAction.q},${lastAction.r}`;
+    
+    // 1. Reverte o terreno do hexágono principal
+    const hex = hexes.get(key);
+    if (hex) {
+        hex.terrain = lastAction.oldTerrain;
+    }
+
+    // 2. Remove hexágonos de névoa que foram criados por essa ação
+    lastAction.newlyCreatedKeys.forEach(k => {
+        hexes.delete(k);
+    });
+
+    updateUI(lastAction.q, lastAction.r);
+    console.log("Desfeito! Itens no histórico:", historyStack.length);
+}
+
+// --- ATUALIZAÇÃO DA FUNÇÃO UPDATEHEX ---
+function updateHex(q, r, forceActivate = false) {
+    const key = `${q},${r}`;
+    let hex = hexes.get(key);
+    
+    // Captura o estado antes da mudança para o Undo
+    const oldTerrain = hex ? hex.terrain : null;
+    const initialKeys = new Set(hexes.keys());
+
+    if (!hex || (!TERRAIN_TYPES[hex.terrain].active && forceActivate)) {
+        hexes.set(key, new HexTile(q, r, 'GRASSLAND'));
+        expandFog(q, r);
+        
+        // Identifica quais chaves são novas para poder deletar no undo
+        const currentKeys = Array.from(hexes.keys());
+        const newlyCreated = currentKeys.filter(k => !initialKeys.has(k));
+        
+        saveAction(q, r, oldTerrain, newlyCreated);
+    } else if (currentTool === "1" && TERRAIN_TYPES[hex.terrain].active) {
+        saveAction(q, r, oldTerrain, []); // Nenhuma nova névoa criada ao apenas mudar o tipo
+        
+        const types = Object.keys(TERRAIN_TYPES).filter(t => TERRAIN_TYPES[t].active);
+        let idx = (types.indexOf(hex.terrain) + 1) % types.length;
+        hex.terrain = types[idx];
+    }
+
+    updateUI(q, r);
+}
+
+// --- ESCUTADOR DE CTRL + Z ---
+window.addEventListener('keydown', (e) => {
+    // Detecta Ctrl+Z ou Cmd+Z (Mac)
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        e.preventDefault();
+        undo();
+    }
+});
+
+    init();
+</script>
+</body>
+</html>

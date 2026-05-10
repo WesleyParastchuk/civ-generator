@@ -1,7 +1,7 @@
 'use client';
 
 import { GameMap } from '@/lib/civ/GameMap';
-import { TERRAIN_LABEL } from '@/lib/civ/types';
+import { getTerrainLabel } from '@/lib/civ/configHelpers';
 import { District } from '@/lib/civ/District';
 import { Wonder } from '@/lib/civ/Wonder';
 
@@ -20,7 +20,7 @@ export function StatsPanel({ map, selectedKey }: Props) {
   return (
     <div className="absolute bottom-4 left-4 bg-[var(--civ-panel)] border border-[var(--civ-gold-500)]/30 rounded-md p-3 text-xs text-[var(--civ-gold-100)] w-56 shadow-lg pointer-events-auto">
       <div className="font-mono text-[10px] text-[var(--civ-gold-300)]/60 mb-2">
-        ({tile.q}, {tile.r}) — {TERRAIN_LABEL[tile.terrain]}
+        ({tile.q}, {tile.r}) — {getTerrainLabel(tile.terrain)}
       </div>
 
       {tile.placement instanceof District && (

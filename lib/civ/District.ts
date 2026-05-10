@@ -8,6 +8,7 @@ import {
   RequireFlat,
 } from './Requirement';
 import { DistrictType, Terrain, Resource, Feature, isHills } from './types';
+import { ConfigStore } from './ConfigStore';
 
 interface DistrictMeta {
   type: DistrictType;
@@ -17,7 +18,7 @@ interface DistrictMeta {
   buildings: BuildingType[];
 }
 
-const DISTRICT_META: Record<DistrictType, DistrictMeta> = {
+export const DISTRICT_META: Record<DistrictType, DistrictMeta> = {
   [DistrictType.CityCenter]:           { type: DistrictType.CityCenter,           name: 'Centro da Cidade',         color: '#c0392b', abbr: 'CC', buildings: [BuildingType.Monument, BuildingType.Granary, BuildingType.WaterMill, BuildingType.AncientWalls, BuildingType.MedievalWalls, BuildingType.Palace] },
   [DistrictType.Campus]:               { type: DistrictType.Campus,               name: 'Campus',                   color: '#2980b9', abbr: 'CA', buildings: [BuildingType.Library, BuildingType.University, BuildingType.ResearchLab] },
   [DistrictType.CommercialHub]:        { type: DistrictType.CommercialHub,        name: 'Hub Comercial',            color: '#f39c12', abbr: 'HC', buildings: [BuildingType.Market, BuildingType.Bank, BuildingType.StockExchange] },
@@ -40,8 +41,8 @@ export abstract class District extends Placement {
   buildings: Building[] = [];
 
   get meta(): DistrictMeta { return DISTRICT_META[this.type]; }
-  get name(): string { return this.meta.name; }
-  get color(): string { return this.meta.color; }
+  get name(): string { return ConfigStore.getItem('district', this.type).label ?? this.meta.name; }
+  get color(): string { return ConfigStore.getItem('district', this.type).color ?? this.meta.color; }
   get abbr(): string { return this.meta.abbr; }
   get availableBuildings(): BuildingType[] { return this.meta.buildings; }
 
@@ -74,7 +75,10 @@ export abstract class District extends Placement {
   abstract getAdjacencyBonus(tile: HexTile, map: GameMap): Stats;
 
   getEffect(tile: HexTile, map: GameMap): Stats {
-    return this.buildingsStats().add(this.getAdjacencyBonus(tile, map));
+    const s = this.buildingsStats().add(this.getAdjacencyBonus(tile, map));
+    const ov = ConfigStore.getItem('district', this.type).yields;
+    if (ov) s.add(Stats.of(ov));
+    return s;
   }
 }
 

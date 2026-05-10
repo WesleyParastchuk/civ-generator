@@ -5,6 +5,7 @@ import {
   RequireRiverAdjacent, RequireFlat, RequireHills, RequireCoastal,
 } from './Requirement';
 import { WonderType } from './types';
+import { ConfigStore } from './ConfigStore';
 import type { HexTile } from './HexTile';
 import type { GameMap } from './GameMap';
 
@@ -41,15 +42,30 @@ export class Wonder extends Placement {
   constructor(readonly type: WonderType) { super(); }
 
   get data(): WonderData { return WONDER_DATA[this.type]; }
-  get name(): string { return this.data.name; }
+  get name(): string { return ConfigStore.getItem('wonder', this.type).label ?? this.data.name; }
   get era(): string { return this.data.era; }
-  get color(): string { return this.data.color; }
+  get color(): string { return ConfigStore.getItem('wonder', this.type).color ?? this.data.color; }
 
   get requirements(): Requirement[] {
     return [new RequireNoExistingPlacement(), new RequireNotWater(), ...this.data.extraReqs];
   }
 
-  getEffect(_tile: HexTile, _map: GameMap): Stats { return this.data.effect.clone(); }
+  getEffect(_tile: HexTile, _map: GameMap): Stats {
+    const base = this.data.effect.clone();
+    const ov = ConfigStore.getItem('wonder', this.type).yields;
+    if (!ov) return base;
+    return Stats.of({
+      food:       ov.food       ?? base.food,
+      production: ov.production ?? base.production,
+      science:    ov.science    ?? base.science,
+      gold:       ov.gold       ?? base.gold,
+      culture:    ov.culture    ?? base.culture,
+      faith:      ov.faith      ?? base.faith,
+      housing:    ov.housing    ?? base.housing,
+      amenities:  ov.amenities  ?? base.amenities,
+      appeal:     ov.appeal     ?? base.appeal,
+    });
+  }
 }
 
 export class WonderFactory {

@@ -3,7 +3,8 @@
 import { useRef, useEffect, useCallback } from 'react';
 import { GameMap } from '@/lib/civ/GameMap';
 import { HexCoord, hexCorners } from '@/lib/civ/HexCoord';
-import { TERRAIN_COLORS, Terrain, ToolId } from '@/lib/civ/types';
+import { Terrain, ToolId } from '@/lib/civ/types';
+import { getTerrainColor } from '@/lib/civ/configHelpers';
 import { District } from '@/lib/civ/District';
 import { Wonder } from '@/lib/civ/Wonder';
 import type { ToolState } from './MapEditor';
@@ -50,7 +51,7 @@ export function HexCanvas({ map, version, selectedKey, tool, onApplyTool }: Prop
       for (let i = 1; i < 6; i++) ctx.lineTo(cs[i][0], cs[i][1]);
       ctx.closePath();
 
-      ctx.fillStyle = TERRAIN_COLORS[tile.terrain];
+      ctx.fillStyle = getTerrainColor(tile.terrain);
       ctx.fill();
 
       if (tile.terrain === Terrain.Fog) {

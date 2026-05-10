@@ -81,7 +81,7 @@ function SelectVoteField({ schema, leaders, pointsRemaining, myTurnVoteTally, on
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="flex w-full items-center gap-2 rounded-lg border border-[rgb(190_153_81_/_0.35)] bg-[rgb(11_25_44_/_0.9)] px-3 py-2 text-left text-sm text-[rgb(232_209_158_/_0.9)] outline-none focus:border-[rgb(214_178_97_/_0.6)]"
+          className="flex w-full cursor-pointer items-center gap-2 rounded-lg border border-[rgb(190_153_81_/_0.35)] bg-[rgb(11_25_44_/_0.9)] px-3 py-2 text-left text-sm text-[rgb(232_209_158_/_0.9)] outline-none focus:border-[rgb(214_178_97_/_0.6)]"
         >
           {hasImages && selectedOpt?.civIcon && (
             // eslint-disable-next-line @next/next/no-img-element
@@ -106,7 +106,7 @@ function SelectVoteField({ schema, leaders, pointsRemaining, myTurnVoteTally, on
                   type="button"
                   onClick={() => { setSelectedValue(String(opt.value)); setOpen(false); }}
                   className={[
-                    "flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors",
+                    "flex w-full cursor-pointer items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors",
                     isSelected
                       ? "bg-[rgb(23_47_76_/_0.8)] text-[rgb(239_223_187_/_0.95)]"
                       : "text-[rgb(232_209_158_/_0.85)] hover:bg-[rgb(23_47_76_/_0.5)]",
@@ -145,7 +145,7 @@ function SelectVoteField({ schema, leaders, pointsRemaining, myTurnVoteTally, on
           onClick={() => { if (selectedOpt && canVote) onVote(selectedOpt.value, weight); }}
           onContextMenu={(e) => { e.preventDefault(); if (selectedOpt && mySpentOnSelected > 0) onRemoveVote(selectedOpt.value); }}
           aria-label={`Votar em ${selectedOpt?.label ?? ""} (clique direito para remover)`}
-          className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-[rgb(214_178_97_/_0.54)] bg-gradient-to-b from-[rgb(24_53_84_/_0.94)] to-[rgb(13_28_48_/_0.96)] py-2.5 text-sm font-semibold text-[rgb(237_210_148_/_0.96)] shadow-[inset_0_0_0_1px_rgb(255_220_150_/_0.07)] transition-all duration-150 hover:not-disabled:brightness-110 hover:not-disabled:-translate-y-px disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border border-[rgb(214_178_97_/_0.54)] bg-gradient-to-b from-[rgb(24_53_84_/_0.94)] to-[rgb(13_28_48_/_0.96)] py-2.5 text-sm font-semibold text-[rgb(237_210_148_/_0.96)] shadow-[inset_0_0_0_1px_rgb(255_220_150_/_0.07)] transition-all duration-150 hover:not-disabled:brightness-110 hover:not-disabled:-translate-y-px disabled:cursor-not-allowed disabled:opacity-40"
         >
           <ThumbsUp className="h-4 w-4 shrink-0" />
           Votar · {weight} pt{weight !== 1 ? "s" : ""}
