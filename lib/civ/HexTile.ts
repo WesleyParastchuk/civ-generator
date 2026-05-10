@@ -3,9 +3,25 @@ import { HexEdge } from './HexEdge';
 import { Stats } from './Stats';
 import { Placement } from './Placement';
 import { Terrain, Feature, Resource, isHills, isWater } from './types';
+import { ConfigStore, ItemConfig } from './ConfigStore';
 import type { GameMap } from './GameMap';
 
-const TERRAIN_BASE: Record<Terrain, Stats> = {
+function mergeYields(base: Stats, ov: ItemConfig['yields']): Stats {
+  if (!ov) return base;
+  return Stats.of({
+    food:       ov.food       ?? base.food,
+    production: ov.production ?? base.production,
+    science:    ov.science    ?? base.science,
+    gold:       ov.gold       ?? base.gold,
+    culture:    ov.culture    ?? base.culture,
+    faith:      ov.faith      ?? base.faith,
+    housing:    ov.housing    ?? base.housing,
+    amenities:  ov.amenities  ?? base.amenities,
+    appeal:     ov.appeal     ?? base.appeal,
+  });
+}
+
+export const TERRAIN_BASE: Record<Terrain, Stats> = {
   [Terrain.Fog]:            Stats.zero(),
   [Terrain.Ocean]:          Stats.of({ food: 1 }),
   [Terrain.Coast]:          Stats.of({ food: 1, gold: 1 }),
@@ -22,7 +38,7 @@ const TERRAIN_BASE: Record<Terrain, Stats> = {
   [Terrain.Mountain]:       Stats.zero(),
 };
 
-const FEATURE_BASE: Record<Feature, Stats> = {
+export const FEATURE_BASE: Record<Feature, Stats> = {
   [Feature.None]:        Stats.zero(),
   [Feature.Forest]:      Stats.of({ production: 1, appeal: 1 }),
   [Feature.Rainforest]:  Stats.of({ food: 1, appeal: -1 }),
@@ -33,7 +49,7 @@ const FEATURE_BASE: Record<Feature, Stats> = {
   [Feature.Ice]:         Stats.zero(),
 };
 
-const RESOURCE_BASE: Record<Resource, Stats> = {
+export const RESOURCE_BASE: Record<Resource, Stats> = {
   [Resource.None]:      Stats.zero(),
   [Resource.Wheat]:     Stats.of({ food: 1 }),
   [Resource.Rice]:      Stats.of({ food: 1 }),
@@ -93,9 +109,9 @@ export class HexTile {
   get appeal(): number { return this.getBaseStats().appeal; }
 
   getBaseStats(): Stats {
-    return TERRAIN_BASE[this.terrain].clone()
-      .add(FEATURE_BASE[this.feature])
-      .add(RESOURCE_BASE[this.resource]);
+    return mergeYields(TERRAIN_BASE[this.terrain], ConfigStore.getItem('terrain', this.terrain).yields).clone()
+      .add(mergeYields(FEATURE_BASE[this.feature], ConfigStore.getItem('feature', this.feature).yields))
+      .add(mergeYields(RESOURCE_BASE[this.resource], ConfigStore.getItem('resource', this.resource).yields));
   }
 
   getFinalStats(map: GameMap): Stats {

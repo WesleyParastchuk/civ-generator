@@ -127,6 +127,89 @@ export const TERRAIN_LABEL: Record<Terrain, string> = {
   [Terrain.Mountain]:       'Montanha',
 };
 
+export const FEATURE_LABEL: Record<Feature, string> = {
+  [Feature.None]:        'Nenhuma',
+  [Feature.Forest]:      'Floresta',
+  [Feature.Rainforest]:  'Floresta Tropical',
+  [Feature.Marsh]:       'Pântano',
+  [Feature.Floodplains]: 'Planície Inundada',
+  [Feature.Oasis]:       'Oásis',
+  [Feature.Reef]:        'Recife',
+  [Feature.Ice]:         'Gelo',
+};
+
+export const FEATURE_COLOR: Record<Feature, string> = {
+  [Feature.None]:        '#555555',
+  [Feature.Forest]:      '#228b22',
+  [Feature.Rainforest]:  '#006400',
+  [Feature.Marsh]:       '#4a5c3f',
+  [Feature.Floodplains]: '#7ab800',
+  [Feature.Oasis]:       '#a0c830',
+  [Feature.Reef]:        '#0099cc',
+  [Feature.Ice]:         '#cce8ff',
+};
+
+export const RESOURCE_LABEL: Record<Resource, string> = {
+  [Resource.None]:      'Nenhum',
+  [Resource.Wheat]:     'Trigo',
+  [Resource.Rice]:      'Arroz',
+  [Resource.Cattle]:    'Gado',
+  [Resource.Sheep]:     'Ovelha',
+  [Resource.Deer]:      'Veado',
+  [Resource.Bananas]:   'Banana',
+  [Resource.Fish]:      'Peixe',
+  [Resource.Crabs]:     'Caranguejo',
+  [Resource.Stone]:     'Pedra',
+  [Resource.Copper]:    'Cobre',
+  [Resource.Wine]:      'Vinho',
+  [Resource.Silk]:      'Seda',
+  [Resource.Citrus]:    'Cítricos',
+  [Resource.Cotton]:    'Algodão',
+  [Resource.Diamonds]:  'Diamantes',
+  [Resource.Furs]:      'Peles',
+  [Resource.Ivory]:     'Marfim',
+  [Resource.Jade]:      'Jade',
+  [Resource.Pearls]:    'Pérolas',
+  [Resource.Salt]:      'Sal',
+  [Resource.Silver]:    'Prata',
+  [Resource.Spices]:    'Especiarias',
+  [Resource.Sugar]:     'Açúcar',
+  [Resource.Tea]:       'Chá',
+  [Resource.Tobacco]:   'Tabaco',
+  [Resource.Truffles]:  'Trufas',
+  [Resource.Horses]:    'Cavalos',
+  [Resource.Iron]:      'Ferro',
+  [Resource.Niter]:     'Salitre',
+  [Resource.Coal]:      'Carvão',
+  [Resource.Oil]:       'Petróleo',
+  [Resource.Aluminum]:  'Alumínio',
+  [Resource.Uranium]:   'Urânio',
+};
+
+export const RESOURCE_COLOR: Record<Resource, string> = {
+  [Resource.None]:      '#555555',
+  // bonus
+  [Resource.Wheat]:     '#c8a850', [Resource.Rice]:     '#c8a850',
+  [Resource.Cattle]:    '#c8a850', [Resource.Sheep]:    '#c8a850',
+  [Resource.Deer]:      '#c8a850', [Resource.Bananas]:  '#c8a850',
+  [Resource.Fish]:      '#c8a850', [Resource.Crabs]:    '#c8a850',
+  [Resource.Stone]:     '#c8a850', [Resource.Copper]:   '#c8a850',
+  // luxury
+  [Resource.Wine]:      '#9b59b6', [Resource.Silk]:     '#9b59b6',
+  [Resource.Citrus]:    '#9b59b6', [Resource.Cotton]:   '#9b59b6',
+  [Resource.Diamonds]:  '#9b59b6', [Resource.Furs]:     '#9b59b6',
+  [Resource.Ivory]:     '#9b59b6', [Resource.Jade]:     '#9b59b6',
+  [Resource.Pearls]:    '#9b59b6', [Resource.Salt]:     '#9b59b6',
+  [Resource.Silver]:    '#9b59b6', [Resource.Spices]:   '#9b59b6',
+  [Resource.Sugar]:     '#9b59b6', [Resource.Tea]:      '#9b59b6',
+  [Resource.Tobacco]:   '#9b59b6', [Resource.Truffles]: '#9b59b6',
+  // strategic
+  [Resource.Horses]:    '#7f8c8d', [Resource.Iron]:     '#7f8c8d',
+  [Resource.Niter]:     '#7f8c8d', [Resource.Coal]:     '#7f8c8d',
+  [Resource.Oil]:       '#7f8c8d', [Resource.Aluminum]: '#7f8c8d',
+  [Resource.Uranium]:   '#7f8c8d',
+};
+
 export function isHills(t: Terrain): boolean {
   return t === Terrain.GrasslandHills || t === Terrain.PlainsHills ||
          t === Terrain.DesertHills || t === Terrain.TundraHills ||

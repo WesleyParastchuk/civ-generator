@@ -13,7 +13,9 @@ import { WonderFactory } from '@/lib/civ/Wonder';
 import { HexCanvas } from './HexCanvas';
 import { Toolbar, defaultToolState } from './Toolbar';
 import { StatsPanel } from './StatsPanel';
+import { SubMenu } from './SubMenu';
 import { findToolByDigit } from './shortcuts';
+import { getSubMenuItems, TOOLS_WITH_SUBMENU } from './subMenuItems';
 
 export type ToolState =
   | { id: ToolId.Select }
@@ -27,11 +29,16 @@ export type ToolState =
   | { id: ToolId.Wonder;   payload: WonderType }
   | { id: ToolId.River };
 
+type SubMenuState = { toolId: ToolId; page: number };
+
 export function MapEditor() {
   const mapRef = useRef<GameMap>(GameMap.initial());
   const [tool, setTool] = useState<ToolState>({ id: ToolId.Select });
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [version, setVersion] = useState(0);
+  const [subMenu, setSubMenu] = useState<SubMenuState | null>(null);
+  const subMenuRef = useRef<SubMenuState | null>(null);
+  subMenuRef.current = subMenu;
 
   const bump = useCallback(() => setVersion(v => v + 1), []);
 
@@ -101,6 +108,19 @@ export function MapEditor() {
     bump();
   }, [tool, bump]);
 
+  const onSubMenuSelect = useCallback((payload: Terrain | Feature | Resource | DistrictType | WonderType) => {
+    const sm = subMenuRef.current;
+    if (!sm) return;
+    switch (sm.toolId) {
+      case ToolId.Terrain:  setTool({ id: ToolId.Terrain,  payload: payload as Terrain });      break;
+      case ToolId.Feature:  setTool({ id: ToolId.Feature,  payload: payload as Feature });      break;
+      case ToolId.Resource: setTool({ id: ToolId.Resource, payload: payload as Resource });     break;
+      case ToolId.District: setTool({ id: ToolId.District, payload: payload as DistrictType }); break;
+      case ToolId.Wonder:   setTool({ id: ToolId.Wonder,   payload: payload as WonderType });   break;
+    }
+    setSubMenu(null);
+  }, []);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
@@ -113,15 +133,49 @@ export function MapEditor() {
         return;
       }
 
+      const sm = subMenuRef.current;
+      if (sm) {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          setSubMenu(null);
+          return;
+        }
+        if (e.key === 'Tab' || e.key === '.') {
+          e.preventDefault();
+          const items = getSubMenuItems(sm.toolId);
+          const maxPage = Math.ceil(items.length / 9) - 1;
+          setSubMenu(s => s ? { ...s, page: Math.min(s.page + 1, maxPage) } : null);
+          return;
+        }
+        if (e.key === ',') {
+          e.preventDefault();
+          setSubMenu(s => s ? { ...s, page: Math.max(s.page - 1, 0) } : null);
+          return;
+        }
+        const digit = parseInt(e.key);
+        if (digit >= 1 && digit <= 9) {
+          e.preventDefault();
+          const items = getSubMenuItems(sm.toolId);
+          const index = sm.page * 9 + (digit - 1);
+          if (items[index]) onSubMenuSelect(items[index].payload);
+          return;
+        }
+      }
+
       const def = findToolByDigit(e.key);
       if (def) {
         e.preventDefault();
         setTool(defaultToolState(def));
+        if (TOOLS_WITH_SUBMENU.includes(def.id)) {
+          setSubMenu(s => (s?.toolId === def.id) ? null : { toolId: def.id, page: 0 });
+        } else {
+          setSubMenu(null);
+        }
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [bump]);
+  }, [bump, onSubMenuSelect]);
 
   return (
     <div className="w-screen h-screen bg-[var(--civ-blue-950)] relative overflow-hidden">
@@ -133,7 +187,23 @@ export function MapEditor() {
         onApplyTool={applyTool}
         onMutate={bump}
       />
-      <Toolbar tool={tool} onSelectTool={def => setTool(defaultToolState(def))} />
+      <Toolbar tool={tool} onSelectTool={def => {
+        setTool(defaultToolState(def));
+        if (TOOLS_WITH_SUBMENU.includes(def.id)) {
+          setSubMenu(s => (s?.toolId === def.id) ? null : { toolId: def.id, page: 0 });
+        } else {
+          setSubMenu(null);
+        }
+      }} />
+      {subMenu && (
+        <SubMenu
+          toolId={subMenu.toolId}
+          page={subMenu.page}
+          onSelect={onSubMenuSelect}
+          onPageChange={page => setSubMenu(s => s ? { ...s, page } : null)}
+          onClose={() => setSubMenu(null)}
+        />
+      )}
       <StatsPanel map={mapRef.current} selectedKey={selectedKey} />
     </div>
   );

@@ -1,0 +1,224 @@
+{
+  "guides": [
+    {
+      "leaderId": 3,
+      "leader": "Catarina de Médici",
+      "civilization": "França",
+      "habilidadeCiv": "Grand Tour — +20% produção em Maravilhas; +2 Turismo por Maravilha construída",
+      "habilidadeLider": "Rainha Negra — câmaras de espionagem extras; agentes iniciam com nível mais alto",
+      "unidadeUnica": "Bombarda Real",
+      "infraUnica": "Château (melhoria: +2 Culture e Appeal adjacente a rios e Maravilhas)",
+      "playstyle": "Maravilhas, espionagem e Turismo",
+      "vitoriaIdeal": "Cultural"
+    },
+    {
+      "leaderId": 4,
+      "leader": "Dom Pedro II",
+      "civilization": "Brasil",
+      "habilidadeCiv": "Amazônia — tiles de floresta/selva adjacentes a distritos geram +2 do rendimento principal daquele distrito",
+      "habilidadeLider": "Magnanimidade — Great People custam -20% Faith/Gold; +1 Great Person point por turno em todas as categorias",
+      "unidadeUnica": "Minas Gerais",
+      "infraUnica": "Estância (melhoria: Production e Culture em floresta/selva)",
+      "playstyle": "Great People, floresta tropical e Cultura",
+      "vitoriaIdeal": "Cultural"
+    },
+    {
+      "leaderId": 5,
+      "leader": "Cleópatra",
+      "civilization": "Egito",
+      "habilidadeCiv": "Iteru — +15% produção em Maravilhas adjacentes a rios; Maravilhas nunca inundam",
+      "habilidadeLider": "Aliança Mediterrânea — acordos com cidades-estado rendem mais Gold; civs aliadas têm relações diplomáticas melhores com o Egito",
+      "unidadeUnica": "Arco a Cavalo",
+      "infraUnica": "Esfinge (melhoria: +1 Faith e +1 Appeal; +1 Culture se adjacente a Maravilha Natural ou construída)",
+      "playstyle": "Maravilhas junto a rios, Gold e diplomacia",
+      "vitoriaIdeal": "Cultural"
+    },
+    {
+      "leaderId": 6,
+      "leader": "Filipe II",
+      "civilization": "Espanha",
+      "habilidadeCiv": "Tordesilhas — bônus de rendimentos ao descobrir continentes; Faith extra em tiles adjacentes a Maravilhas Naturais",
+      "habilidadeLider": "El Escorial — Inquisidores removem heresia completamente (não deixam 10%); unidades religiosas +10 em combate de fé",
+      "unidadeUnica": "Conquistador (bônus de combate em território de cidades-estado)",
+      "infraUnica": "Missão (melhoria: +2 Faith; +1 Science se em continente diferente da capital)",
+      "playstyle": "Expansão religiosa e coleta de Maravilhas Naturais",
+      "vitoriaIdeal": "Religiosa"
+    },
+    {
+      "leaderId": 7,
+      "leader": "Frederico Barba-Ruiva",
+      "civilization": "Alemanha",
+      "habilidadeCiv": "Rhine Confederation — cada cidade pode construir +1 distrito além do limite de população",
+      "habilidadeLider": "Santo Imperador Romano — +7 Força de Combate vs cidades-estado; pode tomar suzerainty à força sem penalidade diplomática",
+      "unidadeUnica": "U-Boot",
+      "infraUnica": "Hansa (substitui Distrito Industrial: +2 Production por distrito adjacente, incluindo o próprio)",
+      "playstyle": "Produção pesada, muitos distritos e expansão militar",
+      "vitoriaIdeal": "Dominação"
+    },
+    {
+      "leaderId": 8,
+      "leader": "Gandhi",
+      "civilization": "Índia",
+      "habilidadeCiv": "Dharma — +1 amenidade por cada religião diferente presente nas cidades (além da religião predominante)",
+      "habilidadeLider": "Satyagraha — +5 Faith por civ em paz com a Índia; penalidade de -2 amenidades e -5 Faith para agressores",
+      "unidadeUnica": "Varu (reduz -5 Força de Combate de inimigos adjacentes)",
+      "infraUnica": "Stepwell (substitui Farm: +1 Housing e +1 Faith; +1 Food se adjacente a um distrito)",
+      "playstyle": "Religião pacífica, alta população e crescimento sustentado",
+      "vitoriaIdeal": "Religiosa"
+    },
+    {
+      "leaderId": 9,
+      "leader": "Gilgamesh",
+      "civilization": "Suméria",
+      "habilidadeCiv": "Epic Quest — capturar acampamento bárbaro gera uma unidade militar grátis do mesmo tipo do que estava no acampamento",
+      "habilidadeLider": "Aventuras com Enkidu — aliado mais próximo compartilha recompensas de pillage e descobertas de guerra",
+      "unidadeUnica": "War-Cart (imune a penalidade de terreno e zona de controle no early game)",
+      "infraUnica": "Zigurate (melhoria: +2 Science e +1 Culture; deve ser adjacente a rio)",
+      "playstyle": "Domínio early game via bárbaros e aliança ofensiva",
+      "vitoriaIdeal": "Científica"
+    },
+    {
+      "leaderId": 10,
+      "leader": "Gorgo",
+      "civilization": "Grécia",
+      "habilidadeCiv": "República de Platão — +1 slot de carta de Política de qualquer tipo (Wild Card) desde o início do jogo",
+      "habilidadeLider": "Termópilas — ganha Culture equivalente a 50% da Força de Combate de cada unidade inimiga eliminada",
+      "unidadeUnica": "Hoplita (+10 Força de Combate quando adjacente a outro Hoplita)",
+      "infraUnica": "Acrópole (substitui Distrito de Teatro: +3 Culture por tile adjacente ao centro da cidade)",
+      "playstyle": "Culture gerada por combate; cartas de governo antecipadas",
+      "vitoriaIdeal": "Cultural"
+    },
+    {
+      "leaderId": 11,
+      "leader": "Haroldo Hardrada",
+      "civilization": "Noruega",
+      "habilidadeCiv": "Knarr — navios de guerra e civis navegam em oceano aberto desde o início; Fjord gera Production e Faith",
+      "habilidadeLider": "Norseman — embarcações de guerra costam menos Production; pillage naval rende Production ou Food completo (sem desconto)",
+      "unidadeUnica": "Berserker (terrestre) + Longship (naval)",
+      "infraUnica": "Igreja Stave (substitui Templo: +1 Culture e +2 Faith adicionais)",
+      "playstyle": "Raiding costeiro, exploração naval precoce e expansão agressiva",
+      "vitoriaIdeal": "Dominação"
+    },
+    {
+      "leaderId": 12,
+      "leader": "Hojo Tokimune",
+      "civilization": "Japão",
+      "habilidadeCiv": "Restauração Meiji — distritos adjacentes a outros distritos recebem +1 de todos os rendimentos que já produzem",
+      "habilidadeLider": "Vento Divino — +5 Força de Combate terrestre e naval em costa e mar pátrios; floresta e pântano geram +1 Faith",
+      "unidadeUnica": "Samurai (mantém Força de Combate máxima mesmo estando com HP baixo)",
+      "infraUnica": "Electronics Factory (substitui Fábrica: +4 Culture para todas as cidades num raio de 6 tiles)",
+      "playstyle": "Cidades compactas e densas com distritos adjacentes maximizados",
+      "vitoriaIdeal": "Científica"
+    },
+    {
+      "leaderId": 13,
+      "leader": "Júlio César",
+      "civilization": "Roma",
+      "habilidadeCiv": "All Roads Lead to Rome — novas cidades já iniciam com estrada ligada à capital; Trade Routes rendem +1 Gold por cidade romana no trajeto",
+      "habilidadeLider": "Divide et Impera — +10 Força de Combate próximo à capital; cidades conquistadas recebem Monumento grátis",
+      "unidadeUnica": "Legião (pode construir estradas, fortes e pontes além de combater)",
+      "infraUnica": "Banhos (substitui Aqueduto: +2 amenidades e +3 Housing)",
+      "playstyle": "Expansão rápida sustentada por infraestrutura e Trade Routes eficientes",
+      "vitoriaIdeal": "Dominação"
+    },
+    {
+      "leaderId": 14,
+      "leader": "Montezuma",
+      "civilization": "Asteca",
+      "habilidadeCiv": "Lenda dos Cinco Sóis — pode gastar recursos estratégicos em estoque para construir distritos instantaneamente (sem Production)",
+      "habilidadeLider": "Presentes ao Tlatoani — cada luxury exclusivo concede +1 amenidade a todas as cidades; +1 Força de Combate por amenidade acima do necessário",
+      "unidadeUnica": "Eagle Warrior (inimigos mortos em combate tornam-se Builders capturados)",
+      "infraUnica": "Tlachtli (substitui Arena: +1 Faith e +2 Great General points por turno)",
+      "playstyle": "Recursos de luxo, expansão agressiva early e domínio continental",
+      "vitoriaIdeal": "Dominação"
+    },
+    {
+      "leaderId": 15,
+      "leader": "Mvemba a Nzinga",
+      "civilization": "Congo",
+      "habilidadeCiv": "Nkisi — cada recurso estratégico e de luxo gera +2 do rendimento mais alto da cidade (Food, Production ou Gold)",
+      "habilidadeLider": "Converso Religioso — não pode fundar religião; recebe gratuitamente os buildings religiosos da fé predominante em cada cidade",
+      "unidadeUnica": "Ngao Mbeba (imune a ataques de distância quando em floresta ou selva)",
+      "infraUnica": "Mbanza (substitui Bairro: não exige mínimo de Population e custa muito menos Production)",
+      "playstyle": "Alto crescimento de população aproveitando a religião dominante alheia",
+      "vitoriaIdeal": "Cultural"
+    },
+    {
+      "leaderId": 16,
+      "leader": "Pedro",
+      "civilization": "Rússia",
+      "habilidadeCiv": "Mãe Rússia — cidades fundadas em tundra recebem +1 tile extra ao redor; tiles de tundra geram +1 Production e +1 Faith",
+      "habilidadeLider": "Grande Embaixada — obtém +1 Science ou Culture por cada tech ou civic que a civ mais avançada na área tiver à frente da Rússia",
+      "unidadeUnica": "Cossaco (+5 Força após matar unidade; pode mover após atacar)",
+      "infraUnica": "Lavra (substitui Santuário: Great Prophet points muito mais rápidos; +1 Appeal nos tiles adjacentes)",
+      "playstyle": "Religião + grande território em tundra + catch-up tecnológico constante",
+      "vitoriaIdeal": "Religiosa"
+    },
+    {
+      "leaderId": 17,
+      "leader": "Péricles",
+      "civilization": "Grécia",
+      "habilidadeCiv": "República de Platão — +1 slot de carta de Política de qualquer tipo (Wild Card) desde o início do jogo",
+      "habilidadeLider": "Cercado de Glória — +5% Culture por cada cidade-estado da qual a Grécia é suzerain",
+      "unidadeUnica": "Hoplita (+10 Força de Combate quando adjacente a outro Hoplita)",
+      "infraUnica": "Acrópole (substitui Distrito de Teatro: +3 Culture por tile adjacente ao centro da cidade)",
+      "playstyle": "Cidades-estado aliadas em cascata crescente de Culture",
+      "vitoriaIdeal": "Cultural"
+    },
+    {
+      "leaderId": 18,
+      "leader": "Qin Shi Huang",
+      "civilization": "China",
+      "habilidadeCiv": "Ciclo Dinástico — Inspirações e Eurekas rendem 60% do custo em vez dos 40% padrão",
+      "habilidadeLider": "O Primeiro Imperador — Builders recebem +2 cargas extras e podem construir Maravilhas da era Antiga",
+      "unidadeUnica": "Canhão Tigre Agachado",
+      "infraUnica": "Grande Muralha (melhoria encadeável: +1 Culture e +1 Gold por segmento; bônus defensivo em combate)",
+      "playstyle": "Maravilhas precoces, Builders poderosos e avanço tecnológico via Eurekas",
+      "vitoriaIdeal": "Científica"
+    },
+    {
+      "leaderId": 19,
+      "leader": "Saladino",
+      "civilization": "Arábia",
+      "habilidadeCiv": "O Último Profeta — recebe automaticamente o último Profeta disponível caso ainda não tenha fundado religião",
+      "habilidadeLider": "Justiça da Fé — crenças custam -30% Faith; Cidade Santa gera bônus de +10% Science e Culture para toda a civ",
+      "unidadeUnica": "Mameluco (restaura HP completamente a cada turno, mesmo após combate no mesmo turno)",
+      "infraUnica": "Madraça (substitui Universidade: +5 Faith por turno além do bônus de Science normal)",
+      "playstyle": "Religião dominante com vantagem científica contínua via Madraça",
+      "vitoriaIdeal": "Religiosa"
+    },
+    {
+      "leaderId": 20,
+      "leader": "Teddy Roosevelt",
+      "civilization": "EUA",
+      "habilidadeCiv": "Pais Fundadores — acumulação de Legados Políticos (bônus de governo) 50% mais rápida",
+      "habilidadeLider": "Doutrina Roosevelt — +5 Força de Combate no continente pátrio; Maravilhas Naturais concedem +2 Appeal aos tiles adjacentes",
+      "unidadeUnica": "P-51 Mustang (+5 Força de Combate contra outras aeronaves)",
+      "infraUnica": "Film Studio (substitui Broadcast Center: dobra o Turismo gerado por obras culturais domésticas)",
+      "playstyle": "Defesa continental forte, Turismo moderno e domínio cultural tardio",
+      "vitoriaIdeal": "Cultural"
+    },
+    {
+      "leaderId": 21,
+      "leader": "Tômiris",
+      "civilization": "Cítia",
+      "habilidadeCiv": "Povo da Estepe — unidades de cavalaria leve custam -25% Production e são treinadas em pares",
+      "habilidadeLider": "Assassina de Ciro — +5 Força de Combate contra quem declarou guerra; unidades curam +50 HP ao eliminar inimigos",
+      "unidadeUnica": "Kurultai (substitui Cavalaria Leve: aura de +15 HP de cura por turno para unidades adjacentes)",
+      "infraUnica": "Tal-Tal (substitui Estábulo: +2 Great General points e +1 Production por turno)",
+      "playstyle": "Enxame de cavalaria barata, agressão early game e retaliação punitiva",
+      "vitoriaIdeal": "Dominação"
+    },
+    {
+      "leaderId": 22,
+      "leader": "Vitória",
+      "civilization": "Inglaterra",
+      "habilidadeCiv": "Museu Britânico — Museus Arqueológicos têm +2 slots de Artefato; cada civ no jogo fornece um Arqueólogo extra à Inglaterra",
+      "habilidadeLider": "O Sol Nunca se Põe — navios em mar profundo recebem +2 Movimento; cada Harbour em continente diferente do pátrio desbloqueia +2 slots de unidade",
+      "unidadeUnica": "Casaca Vermelha (+10 Força de Combate terrestre fora do continente pátrio)",
+      "infraUnica": "Royal Navy Dockyard (substitui Harbour: +1 Great Admiral point; +2 Gold e +1 Movimento naval se em continente diferente)",
+      "playstyle": "Expansão colonial naval, arqueologia massiva e Turismo tardio",
+      "vitoriaIdeal": "Cultural"
+    }
+  ]
+}

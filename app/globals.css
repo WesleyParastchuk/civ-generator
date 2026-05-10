@@ -378,6 +378,14 @@ body {
   100% { opacity: 0; transform: scale(0.88); }
 }
 
+@keyframes flag-wave {
+  0%   { transform: rotate(0deg); }
+  20%  { transform: rotate(-14deg); }
+  50%  { transform: rotate(10deg); }
+  75%  { transform: rotate(-6deg); }
+  100% { transform: rotate(0deg); }
+}
+
 @keyframes final-rise {
   from { opacity: 0; transform: translateY(20px) scale(0.98); }
   to   { opacity: 1; transform: translateY(0)    scale(1);    }
@@ -393,4 +401,183 @@ body {
   .right-column {
     display: none;
   }
+}
+
+/* ─── Dev game page ──────────────────────────────────────────────────────── */
+
+.dev-game-bg {
+  background:
+    radial-gradient(120% 110% at 50% -10%, rgb(218 183 103 / 18%) 0%, rgb(218 183 103 / 0%) 55%),
+    linear-gradient(168deg, rgb(16 42 73) 0%, rgb(8 18 33) 50%, rgb(4 8 15) 100%);
+}
+
+.dev-sidebar-nav {
+  border-right: 1px solid rgb(214 178 97 / 18%);
+}
+
+.dev-areas-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  letter-spacing: 0.1875em;
+  font-size: 0.625em;
+  color: rgb(218 183 103);
+}
+
+.dev-area-btn {
+  height: 4em;
+  width: 4em;
+  border-radius: 0.875em;
+  cursor: pointer;
+}
+
+.dev-area-btn-active {
+  border: 1px solid rgb(218 183 103);
+  background: linear-gradient(rgb(34 71 111 / 95%), rgb(15 33 57 / 95%));
+  box-shadow: rgb(218 183 103 / 18%) 0 0 1.375em 0;
+  color: rgb(244 232 205);
+}
+
+.dev-area-btn-inactive {
+  border: 1px solid rgb(214 178 97 / 25%);
+  background: rgb(11 25 44 / 40%);
+  color: rgb(218 183 103);
+}
+
+.dev-area-btn__label {
+  font-size: 0.5625em;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.dev-area-header {
+  border-bottom: 1px solid rgb(214 178 97 / 12%);
+  padding: 1.125em 1.375em 0.875em;
+}
+
+.dev-area-title {
+  font-family: Cinzel, 'Trajan Pro', 'Times New Roman', serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: rgb(233 211 168);
+  letter-spacing: 1.1px;
+}
+
+.dev-turn-pill {
+  height: 26px;
+  border-radius: 999px;
+  background: rgb(11 25 44 / 70%);
+  border: 1px solid rgb(214 178 97 / 45%);
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.88px;
+  color: rgb(232 209 158 / 92%);
+  text-transform: uppercase;
+}
+
+.dev-area-description {
+  margin-top: 4px;
+  font-size: 12px;
+  color: rgb(232 209 158 / 55%);
+}
+
+.dev-scope-bezel {
+  border-radius: 12px;
+  border: 1px solid rgb(214 178 97 / 40%);
+  background: linear-gradient(rgb(24 53 84 / 94%), rgb(13 28 48 / 96%));
+  box-shadow: rgb(255 220 150 / 7%) 0 0 0 1px inset;
+  padding: 3px;
+  gap: 2px;
+}
+
+.dev-scope-tab {
+  height: 28px;
+  min-width: 80px;
+  border-radius: 8px;
+  padding: 0 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: background 120ms, color 120ms;
+}
+
+.dev-scope-tab-active {
+  background: linear-gradient(rgb(34 71 111 / 95%), rgb(15 33 57 / 95%));
+  color: rgb(244 232 205);
+}
+
+.dev-scope-tab-inactive {
+  background: transparent;
+  color: rgb(232 209 158 / 70%);
+}
+
+.dev-panel-section-label {
+  font-family: Cinzel, 'Trajan Pro', 'Times New Roman', serif;
+  font-size: 10px;
+  font-weight: 400;
+  color: rgb(214 178 97 / 70%);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  display: block;
+}
+
+.btn-flag-icon {
+  transform-origin: bottom left;
+}
+
+button:hover .btn-flag-icon {
+  animation: flag-wave 0.45s ease-in-out;
+}
+
+.player-pip {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 0.3125rem;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: box-shadow 200ms, border-color 200ms;
+}
+
+.player-pip--lg {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.5rem;
+}
+
+.player-pip__letter {
+  font-size: 0.4375rem;
+  font-weight: 700;
+  line-height: 1;
+  display: block;
+}
+
+.player-pip--lg .player-pip__letter {
+  font-size: 0.75rem;
+}
+
+.player-pip__badge {
+  position: absolute;
+  bottom: -0.25rem;
+  right: -0.25rem;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  background: rgb(79 141 107);
+  border: 1px solid rgb(10 26 45);
+}
+
+.player-pip__badge::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.3rem;
+  height: 0.175rem;
+  border-left: 1.5px solid white;
+  border-bottom: 1.5px solid white;
+  transform: translate(-50%, -65%) rotate(-45deg);
 }
